@@ -1,0 +1,186 @@
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — APLICADO ÀS TELAS OPERACIONAIS · Fase 9.3
+   Requer tokens.css carregado antes. Escopado sob #page-lanc e
+   #page-fal — as únicas telas com marcação nova nesta fase. Nenhuma
+   outra tela (Cadastros, Banco de Dados, dashboards ETL) é afetada,
+   porque toda regra aqui começa com um desses dois seletores.
+   Reaproveita os MESMOS nomes de classe que o HTML já usa (.card,
+   .field, .input, .btn, .tabs, .table, .kpi-grid...) — nenhum ID,
+   handler ou nome de função foi alterado para chegar a este resultado.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Agrupamento por assunto (Indicadores/Paradas/Analítico) ───────
+   Mesmas 3 seções que já existiam — só respiro e um rótulo mais claro,
+   nenhuma consulta nova. */
+#page-fal .section-title{margin:var(--ds-space-6) 0 var(--ds-space-2);color:var(--ds-text-tertiary);
+  font-size:10.5px;letter-spacing:.08em}
+#page-fal .section-title:first-child{margin-top:0}
+#page-fal .section-title::after{background:var(--ds-border)}
+#page-fal .g2,#page-fal .g3{gap:var(--ds-space-4)}
+
+/* ── Cabeçalho de página ────────────────────────────────────────── */
+#page-lanc .page-header,#page-fal .page-header{margin-bottom:var(--ds-space-5)}
+#page-lanc .page-title,#page-fal .page-title{font-size:var(--ds-text-title-size);font-weight:var(--ds-text-title-weight);
+  letter-spacing:var(--ds-text-title-tracking);color:var(--ds-text-primary)}
+#page-lanc .page-subtitle,#page-fal .page-subtitle{font-size:12.5px;color:var(--ds-text-secondary);margin-top:3px}
+
+/* ── Abas (Horímetro/Falha/Parada/Ferti/Calibração/Histórico/Auditoria) ── */
+#page-lanc .tabs{border-bottom:1.5px solid var(--ds-border);gap:2px;margin-bottom:var(--ds-space-5)}
+#page-lanc .tab-btn{padding:.7rem 1rem;font-size:12.5px;font-weight:600;color:var(--ds-text-secondary);
+  border-bottom:2.5px solid transparent;border-radius:var(--ds-radius-sm) var(--ds-radius-sm) 0 0;
+  transition:color var(--ds-duration-fast) var(--ds-ease-standard),background var(--ds-duration-fast) var(--ds-ease-standard)}
+#page-lanc .tab-btn:hover{color:var(--ds-text-primary);background:var(--ds-bg-surface-2)}
+#page-lanc .tab-btn.active{color:var(--ds-brand);border-bottom-color:var(--ds-brand);background:none}
+#page-lanc .tab-btn:focus-visible{outline:none;box-shadow:var(--ds-focus-ring)}
+
+/* ── Cards (form, resumo, tabela) ──────────────────────────────── */
+#page-lanc .card,#page-fal .card{border-radius:var(--ds-radius-lg);border-color:var(--ds-border);
+  box-shadow:var(--ds-shadow-xs);transition:box-shadow var(--ds-duration-base) var(--ds-ease-standard)}
+#page-lanc .card:hover,#page-fal .card:hover{box-shadow:var(--ds-shadow-sm)}
+#page-lanc .card-header,#page-fal .card-header{padding:var(--ds-space-3) var(--ds-space-4);border-color:var(--ds-border)}
+#page-lanc .card-title,#page-fal .card-title{font-size:13px}
+#page-lanc .card-body,#page-fal .card-body{padding:var(--ds-space-4)}
+#page-lanc .card-footer{padding:var(--ds-space-3) var(--ds-space-4);background:var(--ds-bg-surface-2);border-color:var(--ds-border)}
+
+/* ── Subseções do formulário: Identificação / Dados Operacionais /
+   Informações Complementares — rótulo leve, sem criar um card novo
+   (mantém a estrutura de card único que lanc.js já espera). ─────── */
+.op-subhead{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:700;color:var(--ds-text-tertiary);
+  text-transform:uppercase;letter-spacing:.07em;margin:var(--ds-space-4) 0 var(--ds-space-2)}
+.op-subhead:first-child{margin-top:0}
+.op-subhead::after{content:'';flex:1;height:1px;background:var(--ds-border)}
+.op-subhead svg{width:13px;height:13px;stroke:var(--ds-brand);fill:none;stroke-width:2;flex-shrink:0}
+
+/* ── Placeholder de anexos — estrutura preparada, não implementada ── */
+.op-anexo{display:flex;align-items:center;gap:10px;padding:var(--ds-space-3);border:1.5px dashed var(--ds-border-strong);
+  border-radius:var(--ds-radius-md);color:var(--ds-text-tertiary);font-size:11.5px;background:var(--ds-bg-surface-2)}
+.op-anexo svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;flex-shrink:0}
+.op-anexo .tag{margin-left:auto;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  background:var(--ds-bg-surface-3);border-radius:var(--ds-radius-pill);padding:2px 8px;flex-shrink:0}
+
+/* ── Campos ─────────────────────────────────────────────────────── */
+#page-lanc .field label,#page-fal .field label{font-size:11.5px;font-weight:600;color:var(--ds-text-primary)}
+#page-lanc .input,#page-lanc .select,#page-lanc .textarea,
+#page-fal .input,#page-fal .select,#page-fal .textarea{
+  border-radius:var(--ds-radius-md);border-color:var(--ds-border-strong);font-size:13px;
+  transition:border-color var(--ds-duration-fast) var(--ds-ease-standard),box-shadow var(--ds-duration-fast) var(--ds-ease-standard)}
+#page-lanc .input:focus,#page-lanc .select:focus,#page-lanc .textarea:focus,
+#page-fal .input:focus,#page-fal .select:focus,#page-fal .textarea:focus{
+  border-color:var(--ds-brand);box-shadow:var(--ds-focus-ring);outline:none}
+/* Estado "preenchido automaticamente" (readonly) — visualmente distinto
+   do que o operador ainda precisa digitar, sem novo campo/lógica. */
+#page-lanc .input[readonly],#page-fal .input[readonly]{
+  background:var(--ds-bg-surface-2);color:var(--ds-text-secondary);cursor:default}
+/* Validação imediata — reaproveita as classes .input.error/.input.success
+   que css/styles.css já definia (cor da borda) mas que nenhuma tela usava
+   até agora; js/lanc.js passou a alterná-las com os mesmos predicados de
+   sempre (horasValidas/percentualValido). Aqui só a animação é nova. */
+#page-lanc .input.error,#page-fal .input.error{animation:opShake .3s var(--ds-ease-standard)}
+@keyframes opShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+
+/* ── Botões ─────────────────────────────────────────────────────── */
+#page-lanc .btn,#page-fal .btn{border-radius:var(--ds-radius-md);transition:all var(--ds-duration-fast) var(--ds-ease-standard)}
+#page-lanc .btn:focus-visible,#page-fal .btn:focus-visible{outline:none;box-shadow:var(--ds-focus-ring)}
+#page-lanc .btn-primary{background:var(--ds-brand)}
+#page-lanc .btn-primary:hover{background:var(--ds-brand-hover)}
+
+/* Pulso discreto de confirmação ao salvar com sucesso (classe aplicada
+   e removida por lanc.js — puramente visual, nenhum dado novo). */
+.op-saved-pulse{animation:opSaved .5s var(--ds-ease-standard)}
+@keyframes opSaved{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ds-success) 45%,transparent)}
+  100%{box-shadow:0 0 0 14px color-mix(in srgb,var(--ds-success) 0%,transparent)}}
+
+/* ── Badges ─────────────────────────────────────────────────────── */
+#page-lanc .badge,#page-fal .badge{border-radius:var(--ds-radius-pill);font-weight:700}
+
+/* ── Tabelas ────────────────────────────────────────────────────── */
+#page-lanc .table,#page-fal .table{font-size:12px}
+#page-lanc .table thead th,#page-fal .table thead th{background:var(--ds-bg-surface-2);color:var(--ds-text-secondary);
+  font-size:10px;letter-spacing:.05em;border-color:var(--ds-border-strong)}
+#page-lanc .table tbody td,#page-fal .table tbody td{border-color:var(--ds-border)}
+#page-lanc .table tbody tr:nth-child(even) td,#page-fal .table tbody tr:nth-child(even) td{background:var(--ds-bg-surface-2)}
+#page-lanc .table tbody tr:hover td,#page-fal .table tbody tr:hover td{background:color-mix(in srgb,var(--ds-brand) 6%,var(--ds-bg-surface))}
+/* Destaque para lançamentos criados nas últimas 24h (ver js/lanc.js) */
+#page-lanc .table tbody tr.op-recent td{background:color-mix(in srgb,var(--ds-info) 6%,var(--ds-bg-surface))}
+#page-lanc .table tbody tr.op-recent:hover td{background:color-mix(in srgb,var(--ds-info) 10%,var(--ds-bg-surface))}
+.op-recent-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ds-info);margin-right:5px;vertical-align:middle}
+
+/* ── Barra de busca/filtros acima das tabelas ───────────────────── */
+#page-lanc .search-bar input,#page-fal .search-bar input{border-radius:var(--ds-radius-md)}
+#page-lanc [style*="background:var(--bg-surface2)"],
+#page-fal [style*="background:var(--bg-surface2)"]{background:var(--ds-bg-surface-2)!important}
+
+/* ── Paginação ──────────────────────────────────────────────────── */
+#page-lanc .pag,#page-fal .pag{background:var(--ds-bg-surface-2)}
+#page-lanc .pag-btn,#page-fal .pag-btn{border-radius:var(--ds-radius-sm)}
+#page-lanc .pag-btn.active,#page-fal .pag-btn.active{background:var(--ds-brand);border-color:var(--ds-brand)}
+
+/* ── KPIs de resumo (dentro de cada painel de lançamento) ───────── */
+#page-lanc .kpi,#page-fal .kpi{border-radius:var(--ds-radius-lg);box-shadow:var(--ds-shadow-xs)}
+#page-lanc .kpi:hover,#page-fal .kpi:hover{box-shadow:var(--ds-shadow-md);transform:translateY(-1px)}
+
+/* ── Modal de histórico de versões (novo, global — nomes únicos) ── */
+.ver-timeline{display:flex;flex-direction:column}
+.ver-row{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--ds-border, var(--border))}
+.ver-row:last-child{border-bottom:none}
+.ver-badge{flex-shrink:0;width:34px;height:24px;border-radius:var(--ds-radius-pill);display:flex;align-items:center;justify-content:center;
+  font-size:10.5px;font-weight:800;background:var(--ds-bg-surface-2, var(--bg-surface2));color:var(--ds-text-secondary, var(--text-secondary))}
+.ver-row.atual .ver-badge{background:color-mix(in srgb,var(--ds-success,#16a34a) 16%,transparent);color:var(--ds-success-d,#15803d)}
+.ver-main{flex:1;min-width:0}
+.ver-linha{font-size:12.5px;color:var(--ds-text-primary, var(--text-primary))}
+.ver-tags{display:flex;gap:6px;margin-top:4px}
+
+/* ── Microinterações: editar / excluir / desbloquear seção ─────────
+   Classes aplicadas e removidas por js/lanc.js e js/nav.js — nenhuma
+   delas guarda estado nem decide se a ação é permitida (isso continua
+   inteiramente nos serviços). */
+.op-row-exit{opacity:0!important;transition:opacity .18s var(--ds-ease-standard)}
+.op-edit-pulse{animation:opEditPulse .5s var(--ds-ease-standard)}
+@keyframes opEditPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ds-info) 45%,transparent)}
+  100%{box-shadow:0 0 0 14px color-mix(in srgb,var(--ds-info) 0%,transparent)}}
+.op-unlock{animation:opUnlock .6s var(--ds-ease-standard)}
+@keyframes opUnlock{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ds-brand) 35%,transparent)}
+  60%{box-shadow:0 0 0 10px color-mix(in srgb,var(--ds-brand) 0%,transparent)}100%{box-shadow:none}}
+
+/* Modal de versões: destaca exclusão dentro da própria linha do tempo */
+.ver-row.excluida .ver-linha{color:var(--ds-text-tertiary);text-decoration:line-through}
+
+/* Troca de aba — o painel novo entra com um fade + leve subida */
+#page-lanc [id^="lhm-panel-"]{animation:opTabIn .22s var(--ds-ease-decelerate) both}
+@keyframes opTabIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ── Ícones — mesma espessura de traço em toda a tela (só ícones de
+   interface, grade 24×24; gráficos SVG usam outro viewBox e não são
+   afetados). ────────────────────────────────────────────────────── */
+#page-lanc svg[viewBox="0 0 24 24"],#page-fal svg[viewBox="0 0 24 24"]{stroke-width:1.85}
+
+/* ── Estados da interface (vazio/carregando/sucesso/aviso/erro) ─────
+   Padroniza o que já existia (emEl()/toast()/badges) para os mesmos
+   4 tons em qualquer lugar dentro do escopo. ───────────────────────── */
+#page-lanc .empty-state,#page-fal .empty-state{color:var(--ds-text-tertiary)}
+#page-lanc .empty-state svg,#page-fal .empty-state svg{stroke:var(--ds-border-strong)}
+/* Não há "carregando" real nestas telas — tudo é síncrono (localStorage),
+   então nenhum indicador de loading foi criado (evita CSS morto). O botão
+   Salvar já mostra "Salvando..." (ver js/lanc.js), que é o único estado
+   assíncrono-like que de fato existe. */
+
+/* ── Acessibilidade — foco visível consistente em qualquer elemento
+   interativo novo desta fase que ainda não tinha um estado de foco. ── */
+#page-lanc a,#page-lanc [tabindex],#page-fal a,#page-fal [tabindex]{outline:none}
+#page-lanc a:focus-visible,#page-lanc [tabindex]:focus-visible,
+#page-fal a:focus-visible,#page-fal [tabindex]:focus-visible{box-shadow:var(--ds-focus-ring);border-radius:var(--ds-radius-sm)}
+
+/* ── Responsividade — os formulários usam grid inline (1fr 1fr 1fr /
+   1fr 1fr 1fr 1fr); em telas estreitas isso teria que colapsar para
+   1 coluna. Como o valor está no atributo style="" do próprio HTML
+   (não numa classe), a única forma de sobrescrever sem tocar em cada
+   linha é via seletor de atributo + !important — não altera nenhum
+   ID/handler, só a apresentação nessa largura de tela. ────────────── */
+@media(max-width:900px){
+  #page-lanc [style*="grid-template-columns:1fr 1fr 1fr 1fr"],
+  #page-lanc [style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr 1fr!important}
+}
+@media(max-width:640px){
+  #page-lanc [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+  #page-lanc [style*="grid-template-columns:1fr 320px"]{grid-template-columns:1fr!important}
+}

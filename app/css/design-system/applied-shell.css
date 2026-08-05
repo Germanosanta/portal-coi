@@ -1,0 +1,299 @@
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — REARQUITETURA DE UX E NAVEGAÇÃO · Fase 10.0
+   Requer tokens.css carregado antes (e, para as telas herdadas, também
+   applied.css/applied-operacional.css). Cobre 4 áreas novas:
+     1) #page-login          — portão de entrada (tela nova)
+     2) #page-home            — Home Corporativa (tela nova)
+     3) #page-opdash          — Painel Operacional (tela nova)
+     4) #page-admin           — Administração (tela nova, placeholder)
+   + a sidebar em acordeão (#sb-wrap) e o menu vertical dentro de
+   #page-lanc/#page-cad (troca as abas horizontais por um nav lateral,
+   sem mexer em nenhum onclick/id — só a geometria via CSS Grid).
+   Reaproveita .card/.btn/.badge/.alert/.field já existentes — nenhuma
+   classe é duplicada, só novas quando não havia equivalente.
+═══════════════════════════════════════════════════════════════ */
+
+/* ═════════════════════ ALERTA (componente da Fase 9.1 que nunca tinha
+   sido carregado de fato — só existia em components.css, a vitrine
+   isolada. Usado por #page-admin desde a Fase 10.0 e agora pelo erro
+   de login; corrigido aqui para valer nas duas telas). ─────────────── */
+.alert{display:flex;gap:10px;padding:12px 14px;border-radius:var(--ds-radius-md);border:1px solid transparent;
+  font-size:12.5px;line-height:1.5}
+.alert svg{flex-shrink:0;margin-top:1px}
+.alert-title{font-weight:700;margin-bottom:2px}
+.alert-info{background:var(--ds-info-l);color:var(--ds-info-d);border-color:color-mix(in srgb,var(--ds-info) 25%,transparent)}
+.alert-success{background:var(--ds-success-l);color:var(--ds-success-d);border-color:color-mix(in srgb,var(--ds-success) 25%,transparent)}
+.alert-warning{background:var(--ds-warning-l);color:var(--ds-warning-d);border-color:color-mix(in srgb,var(--ds-warning) 30%,transparent)}
+.alert-danger{background:var(--ds-danger-l);color:var(--ds-danger-d);border-color:color-mix(in srgb,var(--ds-danger) 25%,transparent)}
+
+/* ═════════════════════ LOGIN CORPORATIVO ══════════════════════════
+   Layout reconstruído para espelhar o mockup "APLICAÇÃO - TELA DE LOGIN"
+   do manual de marca (Log coi unificada.png): foto de fundo em tela
+   cheia + cartão único centralizado. A foto (assets/login-bg-field.png)
+   é um recorte de baixa resolução (só existia como miniatura dentro do
+   mockup do manual, ~100px de largura) — por isso leva blur + camada
+   escura por cima: sem isso, esticada em tela cheia ficaria visivelmente
+   pixelizada. Nenhuma arte nova foi criada, só reaproveitado o que já
+   existe no manual (o próprio card do mockup já sugere esse tratamento
+   suave/desfocado atrás do cartão). */
+.login-page{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:var(--ds-space-6);background:#0a1815;overflow:hidden}
+.login-page::before{content:'';position:absolute;inset:0;
+  background:url('../../assets/login-bg-field.png') center/cover no-repeat;filter:blur(6px) saturate(1.1);
+  transform:scale(1.08)}
+.login-page::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--ds-nav-bg) 55%,transparent) 0%,color-mix(in srgb,var(--ds-nav-bg) 78%,transparent) 100%)}
+.login-panel{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;width:100%}
+/* assets/coi-logo-principal.png e assets/santa-colomba-logo.png têm fundo
+   branco sólido (sem transparência) — como o cartão já é branco, não
+   precisam de "placa" própria como no tratamento antigo sobre fundo escuro. */
+.login-logo-plate{display:flex;justify-content:center}
+.login-logo{height:72px;width:auto;max-width:100%;object-fit:contain}
+.login-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:var(--ds-space-4);align-items:stretch;
+  background:var(--ds-bg-surface);border:1px solid var(--ds-border);border-radius:var(--ds-radius-xl);
+  box-shadow:var(--ds-shadow-xl);padding:var(--ds-space-6)}
+.login-card-head{text-align:center}
+.login-card-title{font-size:var(--ds-text-title-size);font-weight:700;color:var(--ds-text-primary)}
+.login-card-sub{font-size:12.5px;color:var(--ds-text-secondary);margin-top:2px}
+.login-remember{margin-top:-6px}
+.login-submit{height:42px;font-size:13.5px}
+.login-links{display:flex;flex-direction:column;gap:6px;margin-top:4px;text-align:center}
+.login-links a{font-size:11.5px;color:var(--ds-text-tertiary);text-decoration:none}
+.login-links a:hover{color:var(--ds-brand);text-decoration:underline}
+.login-field-wrap{position:relative;display:flex}
+.login-field-icon{position:absolute;left:11px;top:0;bottom:0;margin:auto;width:16px;height:16px;color:var(--ds-text-tertiary)}
+.login-field-wrap .input{padding-left:34px}
+.login-senha-wrap .input{padding-right:38px}
+.login-senha-toggle{position:absolute;right:4px;top:4px;bottom:4px;width:30px;border:none;background:none;
+  color:var(--ds-text-tertiary);cursor:pointer;border-radius:var(--ds-radius-sm);display:flex;align-items:center;justify-content:center}
+.login-senha-toggle:hover{background:var(--ds-bg-surface-2);color:var(--ds-text-primary)}
+.login-senha-toggle svg{width:16px;height:16px}
+#login-err{align-items:flex-start;gap:8px}
+#login-err svg{width:16px;height:16px;flex-shrink:0;margin-top:1px}
+.login-footer-brand{display:flex;justify-content:center;padding-top:10px;border-top:1px solid var(--ds-border)}
+.login-footer-brand img{height:46px;width:auto;object-fit:contain;opacity:.95}
+.login-loading{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  background:color-mix(in srgb,var(--ds-bg-surface) 92%,transparent);backdrop-filter:blur(2px);border-radius:var(--ds-radius-xl);
+  opacity:0;transition:opacity var(--ds-duration-base) var(--ds-ease-standard)}
+.login-loading.show{display:flex;opacity:1}
+.login-loading-spinner{width:34px;height:34px;border-radius:50%;border:3px solid var(--ds-border);
+  border-top-color:var(--ds-brand);animation:loginSpin .7s linear infinite}
+@keyframes loginSpin{to{transform:rotate(360deg)}}
+.login-loading-text{font-size:12.5px;font-weight:600;color:var(--ds-text-secondary)}
+@media(max-width:860px){
+  .login-page{padding:var(--ds-space-4)}
+}
+
+/* ═════════════════════ HOME CORPORATIVA ═══════════════════════════ */
+/* Logo institucional (assets/coi.png) — fundo branco fixo de propósito:
+   a arte tem fundo sólido claro, então fica numa "placa" que não muda
+   com o tema, em vez de um retângulo branco por cima do hero escuro. */
+.home-brand-strip{position:relative;display:flex;justify-content:center;align-items:center;background:#fff;
+  border:1px solid var(--ds-border);border-radius:var(--ds-radius-lg);padding:var(--ds-space-3) var(--ds-space-4)}
+.home-brand-strip img{height:44px;width:auto;max-width:100%;object-fit:contain}
+/* Sair (Sprint 01) — o Portal COI não tem topbar/sidebar, então precisa
+   do próprio atalho de saída; posicionado à direita sem tirar a logo do
+   centro (position:absolute em vez de disputar espaço no flex). */
+.home-logout-btn{position:absolute;right:var(--ds-space-4);top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--ds-radius-md);
+  border:1px solid var(--ds-border);background:none;color:var(--ds-text-secondary);
+  font-size:12px;font-weight:600;cursor:pointer;transition:all var(--ds-duration-fast) var(--ds-ease-standard)}
+.home-logout-btn:hover{background:var(--ds-danger-l);color:var(--ds-danger);border-color:color-mix(in srgb,var(--ds-danger) 30%,transparent)}
+@media(max-width:576px){.home-logout-btn span{display:none}}
+
+.home-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:var(--ds-space-4)}
+.home-card{display:flex;flex-direction:column;gap:10px;background:var(--ds-bg-surface);border:1px solid var(--ds-border);
+  border-radius:var(--ds-radius-lg);padding:var(--ds-space-4);box-shadow:var(--ds-shadow-xs);
+  transition:box-shadow var(--ds-duration-base) var(--ds-ease-standard),transform var(--ds-duration-base) var(--ds-ease-standard);
+  animation:exec2In .35s var(--ds-ease-decelerate) both}
+.home-card:hover{box-shadow:var(--ds-shadow-md);transform:translateY(-2px)}
+.home-card.foco{border-color:var(--ds-brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--ds-brand) 16%,transparent)}
+.home-card-icon{width:38px;height:38px;border-radius:var(--ds-radius-md);display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--ds-accent) 12%,transparent);color:var(--ds-accent)}
+.home-card-icon svg{width:19px;height:19px}
+.home-card-body{flex:1;display:flex;flex-direction:column;gap:4px}
+.home-card-title{font-size:14px;font-weight:700;color:var(--ds-text-primary)}
+.home-card-desc{font-size:11.5px;color:var(--ds-text-secondary);line-height:1.4}
+.home-card-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;flex-wrap:wrap}
+.home-card-qty{font-size:11px;font-weight:700;color:var(--ds-text-primary)}
+.home-card-status{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  padding:2px 8px;border-radius:var(--ds-radius-pill)}
+.home-card-status.ok{background:var(--ds-success-l);color:var(--ds-success-d)}
+.home-card-status.warn{background:var(--ds-warning-l);color:var(--ds-warning-d)}
+.home-card-status.neutral{background:var(--ds-bg-surface-3);color:var(--ds-text-tertiary)}
+.home-card-btn{width:100%;margin-top:2px}
+
+/* ── PORTAL COI — cartões de módulo maiores + cor de destaque (Fase 12.0,
+   paleta exata fechada na Fase 12.1: verde/azul/roxo/laranja/turquesa/
+   cinza). Cada --mod-* reaproveita uma cor já existente na paleta
+   (tokens.css/styles.css) — nenhuma cor nova é criada, só associada a
+   um módulo. Não existe um tom "turquesa" dedicado na paleta carregada;
+   --c-sky (#0284c7, o tom mais frio/azul-esverdeado disponível) foi
+   reaproveitado para Cadastros por ser o mais próximo disso sem inventar
+   uma cor nova. */
+.home-card-grid.portal-grid{grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:var(--ds-space-5)}
+.home-card-grid.portal-grid .home-card{padding:var(--ds-space-5);gap:14px}
+.home-card-grid.portal-grid .home-card-icon{width:46px;height:46px}
+.home-card-grid.portal-grid .home-card-icon svg{width:23px;height:23px}
+.home-card-grid.portal-grid .home-card-title{font-size:16px}
+.home-card.mod-operacao{border-top:3px solid var(--ds-brand)}
+.home-card.mod-operacao .home-card-icon{background:color-mix(in srgb,var(--ds-brand) 14%,transparent);color:var(--ds-brand)}
+.home-card.mod-lancamentos{border-top:3px solid var(--c-info)}
+.home-card.mod-lancamentos .home-card-icon{background:color-mix(in srgb,var(--c-info) 14%,transparent);color:var(--c-info)}
+.home-card.mod-indicadores{border-top:3px solid var(--c-purple)}
+.home-card.mod-indicadores .home-card-icon{background:color-mix(in srgb,var(--c-purple) 14%,transparent);color:var(--c-purple)}
+.home-card.mod-relatorios{border-top:3px solid var(--c-warning)}
+.home-card.mod-relatorios .home-card-icon{background:color-mix(in srgb,var(--c-warning) 14%,transparent);color:var(--c-warning)}
+.home-card.mod-cadastros{border-top:3px solid var(--c-sky)}
+.home-card.mod-cadastros .home-card-icon{background:color-mix(in srgb,var(--c-sky) 14%,transparent);color:var(--c-sky)}
+.home-card.mod-administracao{border-top:3px solid var(--n500)}
+.home-card.mod-administracao .home-card-icon{background:color-mix(in srgb,var(--n500) 14%,transparent);color:var(--n500)}
+
+/* ═════════════════════ SIDEBAR POR MÓDULO (Fase 13.1) ═════════════════
+   Substituiu o acordeão de 6 grupos: cada módulo mostra só os próprios
+   itens (renderSidebarNav em js/nav.js), então não há mais grupo para
+   expandir/recolher — só o botão de voltar ao Portal COI acima do nav. */
+.sb-back-portal{display:flex;align-items:center;gap:6px;margin:.4rem .85rem .2rem;padding:.45rem .7rem;
+  border:1px solid rgba(255,255,255,.12);border-radius:var(--ds-radius-md);background:rgba(255,255,255,.04);
+  color:rgba(255,255,255,.75);font-size:11.5px;font-weight:600;cursor:pointer;
+  transition:all var(--ds-duration-fast) var(--ds-ease-standard)}
+.sb-back-portal:hover{background:rgba(255,255,255,.09);color:#fff}
+.sb-back-portal svg{flex-shrink:0}
+.collapsed .sb-back-portal span{display:none}
+.collapsed .sb-back-portal{justify-content:center;margin:.4rem .5rem .2rem;padding:.45rem}
+
+/* ═════════════════════ PORTAL COI — SEM SIDEBAR/TOPBAR (Fase 13.1) ════
+   O Portal é só a tela de entrada (goPage marca body.coi-portal); dentro
+   de qualquer módulo a navegação volta a aparecer normalmente. */
+body.coi-portal .sidebar-wrap,body.coi-portal .topbar{display:none}
+body.coi-portal .main{margin-left:0}
+
+/* ═════════════════════ PAINEL OPERACIONAL (#page-opdash) ══════════
+   Reaproveita quase tudo de .exec2-* (Fase 9.2). */
+
+/* Ações Rápidas (Sprint 01.2) — cartões pequenos (ícone+título+descrição)
+   em vez de botões simples; mesmo destino de navegação (sbNavigate). */
+.opdash-quick-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:var(--ds-space-3)}
+.opdash-quick-card{display:flex;align-items:center;gap:12px;padding:var(--ds-space-3) var(--ds-space-4);
+  background:var(--ds-bg-surface);border:1px solid var(--ds-border);border-radius:var(--ds-radius-lg);
+  box-shadow:var(--ds-shadow-xs);text-align:left;cursor:pointer;
+  transition:box-shadow var(--ds-duration-base) var(--ds-ease-standard),transform var(--ds-duration-base) var(--ds-ease-standard),border-color var(--ds-duration-fast) var(--ds-ease-standard)}
+.opdash-quick-card:hover{box-shadow:var(--ds-shadow-md);transform:translateY(-1px);border-color:var(--ds-brand)}
+.opdash-quick-card-icon{flex-shrink:0;width:38px;height:38px;border-radius:var(--ds-radius-md);
+  display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--ds-brand) 12%,transparent);color:var(--ds-brand)}
+.opdash-quick-card-icon svg{width:19px;height:19px}
+.opdash-quick-card-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.opdash-quick-card-body .t{font-size:13px;font-weight:700;color:var(--ds-text-primary)}
+.opdash-quick-card-body .s{font-size:11px;color:var(--ds-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Status dos Pivôs (Sprint 01.2) — marcador colorido por situação, para
+   escanear as 3 linhas mais rápido do que só o número. */
+.op-status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:middle}
+
+/* Pivôs com Problemas (Sprint 01.2) — realce só dos casos críticos
+   (falha.criticidade==='Alta', mesmo campo do cadastro de Falhas). */
+#page-opdash .table tbody tr.op-critical td{background:color-mix(in srgb,var(--ds-danger) 7%,var(--ds-bg-surface))}
+#page-opdash .table tbody tr.op-critical:hover td{background:color-mix(in srgb,var(--ds-danger) 12%,var(--ds-bg-surface))}
+
+/* ═════════════════════ ADMINISTRAÇÃO (#page-admin) ═════════════════
+   Reaproveita .home-card (Home) + .alert (Fase 9.1) — nenhum componente
+   novo, só a combinação. */
+
+/* ═════════════════════ MENU VERTICAL — LANÇAMENTOS E CADASTROS ═════
+   As mesmas abas (.tabs/.tab-btn e .lanc-sidenav, com os mesmos onclick
+   de sempre) viram uma coluna lateral via CSS Grid — nenhum HTML novo,
+   nenhum JS novo, só geometria. Funciona porque o nav e os painéis já
+   eram irmãos diretos de .page-wrap. */
+#page-lanc .page-wrap,#page-cad .page-wrap{display:grid;grid-template-columns:196px 1fr;
+  gap:var(--ds-space-5);align-items:start}
+#page-lanc .page-wrap>.page-header,#page-cad .page-wrap>.page-header{grid-column:1/-1}
+#page-lanc .page-wrap>.lanc-sidenav,#page-cad .page-wrap>.tabs{
+  grid-column:1;display:flex;flex-direction:column;flex-wrap:nowrap;gap:2px;
+  border-bottom:none!important;border-right:1.5px solid var(--ds-border);padding-right:var(--ds-space-3);
+  position:sticky;top:calc(var(--topbar-h) + 14px);margin-bottom:0!important}
+#page-lanc .page-wrap>[id^="lhm-panel-"],#page-cad .page-wrap>.tab-panel{grid-column:2;min-width:0}
+#page-lanc .tab-btn,#page-cad .tab-btn{text-align:left;justify-content:flex-start;
+  border-bottom:none!important;border-right:2.5px solid transparent;border-radius:var(--ds-radius-sm) 0 0 var(--ds-radius-sm)}
+#page-lanc .tab-btn.active,#page-cad .tab-btn.active{
+  border-right-color:var(--ds-brand)!important;background:color-mix(in srgb,var(--ds-brand) 7%,transparent)}
+@media(max-width:1024px){
+  #page-lanc .page-wrap,#page-cad .page-wrap{grid-template-columns:1fr}
+  #page-lanc .page-wrap>.lanc-sidenav,#page-cad .page-wrap>.tabs{
+    grid-column:1;flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1.5px solid var(--ds-border)!important;
+    position:static;padding-right:0;padding-bottom:var(--ds-space-2)}
+  #page-lanc .tab-btn,#page-cad .tab-btn{border-right:none!important;border-bottom:2.5px solid transparent;
+    border-radius:var(--ds-radius-sm) var(--ds-radius-sm) 0 0}
+  #page-lanc .tab-btn.active,#page-cad .tab-btn.active{border-right-color:transparent!important;border-bottom-color:var(--ds-brand)!important}
+  .lanc-group-label{flex:0 0 100%;padding:6px 4px 2px}
+  .lanc-subgroup-label{flex:0 0 100%;padding:2px 4px 2px 4px}
+}
+
+/* ═════════════════════ CONSULTA OPERACIONAL (#page-dados) · Sprint 01.3
+   Central de consulta unificada (js/consulta.js, objeto `dq`) sobre os
+   lançamentos reais (Horímetro/Parada/Falha/Fertirrigação/Calibração).
+   Reaproveita .card/.field/.select/.input/.badge/.table/.pag/exec2-* já
+   existentes — só o grid de filtros, o grid tabela+detalhe e as cores
+   discretas por tipo de linha são novos. ─────────────────────────────── */
+.dq-filtros-card{margin-bottom:var(--ds-space-5)}
+.dq-filtros-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--ds-space-3) var(--ds-space-4)}
+.dq-field-search{grid-column:span 2}
+@media(max-width:1100px){ .dq-filtros-grid{grid-template-columns:repeat(2,1fr)} .dq-field-search{grid-column:span 2} }
+@media(max-width:560px){ .dq-filtros-grid{grid-template-columns:1fr} .dq-field-search{grid-column:span 1} }
+
+.dq-result-grid{display:grid;grid-template-columns:1fr 320px;gap:var(--ds-space-4);align-items:start;margin-bottom:var(--ds-space-5)}
+@media(max-width:900px){ .dq-result-grid{grid-template-columns:1fr} }
+.dq-table-card,.dq-detail-card{margin:0}
+.dq-table-wrap{max-height:520px;overflow-y:auto}
+.dq-table thead th{position:sticky;top:0;z-index:1}
+.dq-sortable{cursor:pointer;user-select:none}
+.dq-sortable:hover{color:var(--text-primary)}
+.dq-obs-cell{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--text-secondary)}
+
+/* Linha selecionada + cor discreta por tipo (só tokens já existentes) */
+.dq-row{cursor:pointer}
+.dq-row.selected td{background:color-mix(in srgb,var(--ds-brand) 10%,var(--bg-surface))!important}
+.dq-row-horimetro td:first-child{border-left:3px solid var(--c-success)}
+.dq-row-parada td:first-child{border-left:3px solid var(--c-danger)}
+.dq-row-falha td:first-child{border-left:3px solid var(--c-warning)}
+.dq-row-ferti td:first-child{border-left:3px solid var(--c-info)}
+.dq-row-calibracao td:first-child{border-left:3px solid var(--c-purple)}
+.dq-row.selected td:first-child{border-left:3px solid var(--ds-brand)}
+
+/* Rodapé da consulta — 4 itens reais (nunca fixos), mesmo tom do rodapé global */
+.dq-footer{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--ds-space-4);
+  padding:var(--ds-space-3) var(--ds-space-4);background:var(--bg-surface2);
+  border:1px solid var(--border);border-radius:var(--radius);margin-bottom:var(--ds-space-5)}
+.dq-footer-item{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dq-footer-item .l{font-size:9.5px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em}
+.dq-footer-item .v{font-size:12px;color:var(--text-primary);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:900px){ .dq-footer{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:560px){ .dq-footer{grid-template-columns:1fr} }
+
+/* Mesmo polimento visual já aplicado a #page-lanc/#page-fal (applied-
+   operacional.css) — valores idênticos, só escopo novo, para a Consulta
+   Operacional ficar no mesmo padrão do resto do Design System. */
+#page-dados .card{border-radius:var(--ds-radius-lg);border-color:var(--ds-border);
+  box-shadow:var(--ds-shadow-xs);transition:box-shadow var(--ds-duration-base) var(--ds-ease-standard)}
+#page-dados .card:hover{box-shadow:var(--ds-shadow-sm)}
+#page-dados .card-header{padding:var(--ds-space-3) var(--ds-space-4);border-color:var(--ds-border)}
+#page-dados .card-title{font-size:13px}
+#page-dados .card-body{padding:var(--ds-space-4)}
+#page-dados .input,#page-dados .select,#page-dados .textarea{
+  border-radius:var(--ds-radius-md);border-color:var(--ds-border-strong);font-size:13px;
+  transition:border-color var(--ds-duration-fast) var(--ds-ease-standard),box-shadow var(--ds-duration-fast) var(--ds-ease-standard)}
+#page-dados .input:focus,#page-dados .select:focus,#page-dados .textarea:focus{
+  border-color:var(--ds-brand);box-shadow:var(--ds-focus-ring);outline:none}
+#page-dados .btn{border-radius:var(--ds-radius-md);transition:all var(--ds-duration-fast) var(--ds-ease-standard)}
+#page-dados .badge{border-radius:var(--ds-radius-pill);font-weight:700}
+#page-dados .table{font-size:12px}
+#page-dados .table thead th{background:var(--ds-bg-surface-2);color:var(--ds-text-secondary);
+  font-size:10px;letter-spacing:.05em;border-color:var(--ds-border-strong)}
+#page-dados .table tbody td{border-color:var(--ds-border)}
+#page-dados .table tbody tr:hover td{background:color-mix(in srgb,var(--ds-brand) 6%,var(--ds-bg-surface))}
+#page-dados .search-bar input{border-radius:var(--ds-radius-md)}
+#page-dados .pag{background:var(--ds-bg-surface-2)}
+#page-dados .pag-btn{border-radius:var(--ds-radius-sm)}
+#page-dados .pag-btn.active{background:var(--ds-brand);border-color:var(--ds-brand)}
+#page-dados .empty-state{color:var(--ds-text-tertiary)}
+#page-dados .empty-state svg{stroke:var(--ds-border-strong)}

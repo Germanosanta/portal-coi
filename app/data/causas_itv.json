@@ -1,0 +1,5 @@
+{
+  "Operacional": ["Chuva","Falta de Produto","Funcionário Indisponível","Falta de Água","Mudança de Manejo","Pivô Atolado","Equipamento Ferti","Erosão/Rastro","Limpeza e Aferição","Pulverização","Solo Úmido","Logística","Aguard. Anterior"],
+  "Mecânico": ["Redutor","Adutora Estourada","Bomba/Sucção","Canal/Reservatório","Castanha/Cardã","Rolamento","Trator","Estrutura","Mangote","Pneu"],
+  "Elétrico": ["Cabo Rompido","Falta de Energia","Transformador","Fusivel Estourado","Contator","Gerador","Anel Coletor","Fonte Queimada","Rede Coelba","Painel"]
+}

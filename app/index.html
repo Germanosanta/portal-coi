@@ -1,0 +1,1807 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>COI — Centro de Operações de Irrigação · Santa Colomba</title>
+<link rel="icon" type="image/png" href="assets/favicon-coi.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/design-system/tokens.css">
+<link rel="stylesheet" href="css/design-system/applied.css">
+<link rel="stylesheet" href="css/design-system/applied-operacional.css">
+<link rel="stylesheet" href="css/design-system/applied-shell.css">
+</head>
+<body>
+
+<div class="ov" id="ov" onclick="closeMobileSB()"></div>
+
+<!-- ═══════ LOGIN CORPORATIVO (Fase 10.0) ═══════════════════════════
+     Portão de entrada local — NÃO é autenticação real (não há backend
+     de credenciais ainda). Só passa a exigir um nome de usuário antes
+     de mostrar o app, e guarda a preferência em localStorage, do mesmo
+     jeito que o "perfil local" já usado no topbar (coi_user). A troca
+     por Firebase Authentication (v4.0, já documentada no ROADMAP.md)
+     substitui só doLogin()/doLogout(), sem mexer no resto do app. ── -->
+<!-- Layout espelha o mockup "APLICAÇÃO - TELA DE LOGIN" do manual de marca
+     (Dados Irrigação - Site-APP/Log coi unificada.png): foto de fundo em
+     tela cheia + cartão branco centralizado (logo COI, boas-vindas,
+     usuário/senha, botão ENTRAR, logo Santa Colomba no rodapé do cartão). -->
+<div class="login-page" id="page-login">
+  <div class="login-panel">
+    <form class="login-card" onsubmit="return doLogin(event)">
+      <div class="login-logo-plate">
+        <img src="assets/coi-logo-principal.png" alt="COI — Centro de Operações de Irrigação" class="login-logo">
+      </div>
+      <div class="login-card-head">
+        <div class="login-card-title">Bem-vindo ao COI</div>
+        <div class="login-card-sub">Centro de Operações de Irrigação</div>
+      </div>
+      <div class="field">
+        <label>Usuário</label>
+        <div class="login-field-wrap">
+          <svg class="login-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+          <input type="text" class="input" id="login-usuario" placeholder="seu.usuario" autocomplete="username" required>
+        </div>
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <div class="login-field-wrap login-senha-wrap">
+          <svg class="login-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <input type="password" class="input" id="login-senha" placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="login-senha-toggle" id="login-senha-toggle" aria-label="Mostrar senha" onclick="toggleSenhaVisivel()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8-10-8-10-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="login-err" class="alert alert-danger" style="display:none"></div>
+      <label class="checkbox login-remember">
+        <input type="checkbox" id="login-lembrar">Lembrar usuário
+      </label>
+      <button type="submit" class="btn btn-primary login-submit" id="login-submit-btn">
+        <span id="login-submit-lbl">Entrar</span>
+      </button>
+      <div class="login-links">
+        <a href="#" onclick="toast('Fale com a administração do sistema para redefinir sua senha.','info');return false">Esqueci minha senha</a>
+        <a href="#" onclick="toggleHelpPanel();return false">Sobre o sistema</a>
+        <a href="#" onclick="toggleHelpPanel();return false">Ajuda</a>
+      </div>
+      <div class="login-footer-brand">
+        <img src="assets/santa-colomba-logo.png" alt="Santa Colomba Agropecuária">
+      </div>
+    </form>
+    <div class="login-loading" id="login-loading">
+      <div class="login-loading-spinner"></div>
+      <div class="login-loading-text">Carregando painel operacional...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ APP ═══════════════════════════════════════════════════ -->
+<div class="app" id="app" style="display:none">
+
+<!-- ════════════════════ SIDEBAR ═══════════════════════════════════ -->
+<div class="sidebar-wrap" id="sb-wrap">
+<aside class="sidebar">
+  <!-- Logo -->
+  <div class="sb-header">
+    <img id="sb-logo" src="assets/favicon-coi.png" alt="COI" class="sb-logo-img">
+    <div class="sb-logo-text">
+      <div class="sb-logo-name">Santa Colomba</div>
+      <div class="sb-logo-sub">COI · Operações de Irrigação</div>
+    </div>
+  </div>
+  <!-- Collapse button -->
+  <button class="sb-collapse-btn" id="sb-collapse-btn" onclick="toggleSB()" title="Recolher menu">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+
+  <!-- Voltar ao Portal COI (Fase 13.1) — cada módulo tem sua própria
+       navegação, então este botão é o único caminho de volta à tela de
+       entrada, sempre visível no topo da sidebar. -->
+  <button class="sb-back-portal" onclick="goPage('home')" title="Voltar ao Portal COI">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    <span>Portal COI</span>
+  </button>
+
+  <!-- Nav — renderizado por js/nav.js (renderSidebarNav), a partir de SB_MODULES -->
+  <nav class="sb-nav" id="sb-nav"></nav>
+
+  <!-- Footer -->
+  <div class="sb-footer">
+    <div class="sb-footer-info" id="sb-footer-info">
+      Carregando dados...
+    </div>
+  </div>
+</aside>
+</div><!-- sidebar-wrap -->
+
+<!-- ════════════════════ MAIN ════════════════════════════════════ -->
+<main class="main" id="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="tb-left">
+      <button class="tb-ham btn-icon" onclick="toggleMobileSB()" style="border:none;display:none" id="ham-btn">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <nav class="breadcrumb" id="breadcrumb">
+        <span class="breadcrumb-item" onclick="goPage('home')" title="Voltar ao Portal COI">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px;margin-right:3px"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Portal COI
+        </span>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-item current" id="bc-current">Home</span>
+      </nav>
+    </div>
+    <div class="tb-search" id="gs-wrap">
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="input" id="gs-input" placeholder="Pesquisar pivô, página..." oninput="gsInput(event)" autocomplete="off">
+      </div>
+      <div class="gs-results" id="gs-results"></div>
+    </div>
+    <div class="tb-r">
+      <div class="tb-farm-wrap" title="Fazenda ativa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21V10l9-6 9 6v11"/><path d="M9 21v-6h6v6"/></svg>
+        <select class="tb-farm-select" id="tb-farm-select" onchange="setFazendaAtiva(this.value)">
+          <option value="">Todas as Fazendas</option>
+        </select>
+      </div>
+      <div class="tb-notif" id="notif-wrap">
+        <button class="tb-action" onclick="toggleNotifPanel()" id="notif-btn" title="Notificações">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="tb-notif-badge" id="notif-badge" style="display:none">0</span>
+        </button>
+        <div class="notif-panel" id="notif-panel">
+          <div class="notif-panel-header">
+            <span>Notificações</span>
+            <button class="notif-clear" onclick="clearNotifs()">Limpar</button>
+          </div>
+          <div class="notif-list" id="notif-list"></div>
+        </div>
+      </div>
+      <div class="tb-user" id="tb-user-wrap" onclick="toggleUserMenu(event)">
+        <div class="tb-avatar" id="tb-avatar">SC</div>
+        <div class="tb-user-meta">
+          <span class="tb-user-name" id="tb-user-name">Operador Local</span>
+          <span class="tb-user-role" id="tb-user-role">Operador de Campo</span>
+        </div>
+        <div class="status-indicator si-ok"></div>
+        <div class="tb-user-menu" id="tb-user-menu">
+          <div class="menu-item" onclick="event.stopPropagation();editUserField('nome')">
+            <svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-4-4L4 16v4Z"/></svg>Editar nome
+          </div>
+          <div class="menu-item" onclick="event.stopPropagation();editUserField('cargo')">
+            <svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-4-4L4 16v4Z"/></svg>Editar cargo
+          </div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" onclick="event.stopPropagation();goPage('cfg')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82"/></svg>Configurações
+          </div>
+          <div class="menu-sep"></div>
+          <div class="menu-item danger" onclick="event.stopPropagation();doLogout()">
+            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
+          </div>
+        </div>
+      </div>
+      <!-- Sprint 01 — Sair visível em qualquer módulo, sem precisar abrir o
+           menu do usuário (que continua existindo, sem nenhum controle
+           removido). -->
+      <button class="tb-action tb-logout-btn" onclick="doLogout()" title="Sair">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ════ PÁGINAS ════════════════════════════════════════════════ -->
+
+  <!-- PORTAL COI (Fase 12.1) — tela de entrada, não é dashboard: só logo
+       (já traz o nome do sistema embutido), saudação com nome do usuário,
+       "Escolha o ambiente de trabalho" e os 6 cartões de módulo. Nenhum
+       indicador/gráfico/lista/atividade recente aqui — tudo isso já vive
+       na landing de cada módulo (ex.: Painel Operacional no Centro de
+       Operações), sem duplicar informação na porta de entrada. -->
+  <div class="page active" id="page-home">
+    <div class="page-wrap">
+      <div class="home-brand-strip">
+        <img src="assets/coi.png" alt="Santa Colomba Agropecuária · COI — Centro de Operações de Irrigação">
+        <button class="home-logout-btn" onclick="doLogout()" title="Sair">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Sair</span>
+        </button>
+      </div>
+      <div class="exec2-hero" id="exec2-hero"></div>
+
+      <div class="home-card-grid portal-grid" id="home-module-cards"></div>
+    </div>
+  </div>
+
+  <!-- OPDASH: PAINEL OPERACIONAL (landing do módulo Centro de Operações) -->
+  <div class="page" id="page-opdash">
+    <div class="page-wrap">
+      <div class="page-header">
+        <div><div class="page-title">Painel Operacional</div><div class="page-subtitle">A situação da irrigação, em menos de 30 segundos</div></div>
+      </div>
+
+      <!-- Sprint 01.2 — hierarquia fixa: Resumo Operacional → (Status dos
+           Pivôs + Indicadores do Dia, apoio) → Execução do Dia → Pivôs com
+           Problemas → Pendências → Ocorrências → Planejamento → Ações
+           Rápidas. Nenhum indicador novo — mesmos dados dos Services já
+           existentes, só reorganizados para leitura rápida. -->
+      <div class="exec2-section-title"><span class="t">Resumo Operacional</span></div>
+      <div class="exec2-kpi-grid" id="opdash-resumo"></div>
+
+      <div class="exec2-section-title"><span class="t">Status dos Pivôs</span></div>
+      <div class="exec2-grid-3" id="opdash-status-pivos"></div>
+
+      <div class="exec2-section-title"><span class="t">Indicadores do Dia</span></div>
+      <div class="exec2-kpi-grid" id="opdash-indicadores-dia"></div>
+
+      <div class="exec2-section-title"><span class="t">Execução do Dia</span></div>
+      <div id="opdash-executado-hoje"></div>
+
+      <div class="exec2-section-title"><span class="t">Pivôs com Problemas</span></div>
+      <div id="opdash-pivos-problemas"></div>
+
+      <div class="exec2-section-title"><span class="t">Pendências</span></div>
+      <div id="opdash-pendencias"></div>
+
+      <div class="exec2-section-title"><span class="t">Ocorrências</span></div>
+      <div id="opdash-ocorrencias"></div>
+
+      <div class="exec2-section-title"><span class="t">Planejamento</span></div>
+      <div class="exec2-kpi-grid" id="opdash-planejamento"></div>
+
+      <div class="exec2-section-title"><span class="t">Ações Rápidas</span></div>
+      <div class="opdash-quick-cards" id="opdash-acoes-rapidas"></div>
+
+      <div id="exec2-futuro-wrap" style="display:none">
+        <div class="exec2-section-title"><span class="t">Em Preparação</span></div>
+        <div class="exec2-future" id="exec2-futuro"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXEC: VISÃO GERAL DE INDICADORES (Fase 12.0 — landing do módulo
+       Indicadores; o id da página foi mantido igual ao de antes por
+       compatibilidade interna, era o antigo Dashboard Executivo) -->
+  <div class="page" id="page-exec">
+    <div class="page-wrap">
+      <div class="page-header">
+        <div><div class="page-title">Visão Geral de Indicadores</div><div class="page-subtitle">Indicadores técnicos, gestão e a base ETL histórica consolidada</div></div>
+      </div>
+
+      <!-- BLOCO 4 — INDICADORES TÉCNICOS -->
+      <div class="exec2-section-title"><span class="t">Indicadores Técnicos</span></div>
+      <div class="exec2-ind-grid" id="exec2-indicadores"></div>
+
+      <!-- BLOCO 5 — GESTÃO -->
+      <div class="exec2-section-title"><span class="t">Gestão</span></div>
+      <div class="exec2-grid-3" id="exec2-gestao"></div>
+
+      <!-- ANALÍTICO CONSOLIDADO (BASE ETL) — funcionalidade pré-existente, preservada.
+           Recolhido por padrão: é conteúdo denso e histórico, não faz parte da
+           hierarquia visual dos 6 blocos novos — reduz a sensação de excesso de
+           informação na primeira tela sem remover nada. -->
+      <div class="exec2-section-title" style="cursor:pointer" onclick="toggleExecAnalitico()" id="exec2-analitico-toggle">
+        <span class="t">Analítico Consolidado</span><span class="tag">base ETL histórica</span>
+        <svg id="exec2-analitico-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;transition:transform var(--ds-duration-fast) var(--ds-ease-standard)"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div id="exec2-analitico-body" style="display:none">
+        <div class="kpi-grid" id="exec-kpis"></div>
+        <div class="g3" style="margin-bottom:.9rem" id="exec-gauges"></div>
+        <div class="g2">
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-title-icon" style="background:#1b9e6e"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>Irrigação — Evolução Mensal</div></div><div class="card-body" id="exec-ev-irrig"></div></div>
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-title-icon" style="background:#7c3aed"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 3.5"/></svg></div>Paradas — Evolução Mensal</div></div><div class="card-body" id="exec-ev-itv"></div></div>
+        </div>
+        <div class="g3">
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-title-icon" style="background:#2563eb"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2.2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>Top 10 Pivôs — Paradas</div></div><div class="card-body" id="exec-top-piv"></div></div>
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-title-icon" style="background:#d97706"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>Top 10 Causas — Horas</div></div><div class="card-body" id="exec-top-caus"></div></div>
+          <div class="card"><div class="card-header"><div class="card-title"><div class="card-title-icon" style="background:#0284c7"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>Ferti — Distribuição</div></div><div class="card-body" style="display:flex;justify-content:center" id="exec-ferti-donut"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IRRIG: PLANEJADO × EXECUTADO -->
+  <div class="page" id="page-irrig">
+    <div class="page-wrap">
+      <div class="page-header">
+        <div><div class="page-title">Planejado × Executado</div><div class="page-subtitle">Relatório Geral de Irrigação · KARITEL + RDM</div></div>
+        <div class="page-actions">
+          <button class="btn btn-ghost" onclick="goPage('dados')">Importar Planejamento</button>
+          <button class="btn btn-ghost btn-xs" onclick="resetF('irrig')">✕ Limpar</button>
+          <button class="btn btn-primary btn-xs" onclick="applyF('irrig')"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Aplicar</button>
+        </div>
+      </div>
+
+      <div class="section-title">Planejamento (dados reais) <span class="badge b-success" style="margin-left:6px">Importado / lançado manualmente</span></div>
+      <div class="kpi-grid" style="margin-bottom:.9rem" id="plan-kpis"></div>
+      <div class="card" style="margin-bottom:.9rem">
+        <div class="card-header"><div class="card-title">Registros de Planejamento</div><span id="plan-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+        <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+          <select class="select" id="plan-filtro-faz" onchange="planUI.render()" style="height:30px;font-size:12px;min-width:110px"><option value="">Fazenda</option></select>
+          <select class="select" id="plan-filtro-pivo" onchange="planUI.render()" style="height:30px;font-size:12px;min-width:100px"><option value="">Pivô</option></select>
+          <button class="btn btn-ghost btn-xs" onclick="planUI.clear()">✕ Limpar</button>
+        </div>
+        <div class="table-wrap" id="plan-tbl" style="max-height:340px;overflow-y:auto"></div>
+        <div id="plan-pg" class="pag" style="display:none"></div>
+      </div>
+
+      <div class="section-title">Analítico Consolidado <span style="font-size:9.5px;color:var(--text-tertiary);margin-left:6px">base ETL histórica</span></div>
+      <div class="filter-bar">
+        <div class="filter-field"><div class="filter-label">Fazenda</div><select class="select" id="fi-faz" onchange="filterPivoByFazenda();applyF('irrig')" style="height:32px;font-size:12px"><option value="">Ambas</option><option>KARITEL</option><option>RDM</option></select></div>
+        <div class="filter-field"><div class="filter-label">Pivô</div><select class="select" id="fi-pv" onchange="applyF('irrig')" style="height:32px;font-size:12px;min-width:100px"><option value="">Todos</option></select></div>
+        <div class="filter-field"><div class="filter-label">Motivo</div><select class="select" id="fi-mt" onchange="applyF('irrig')" style="height:32px;font-size:12px"><option value="">Todos</option><option>Feito</option><option>Operacional</option><option>Mecânico</option><option>Elétrico</option></select></div>
+        <div class="filter-field"><div class="filter-label">De</div><input type="month" class="input" id="fi-d1" onchange="applyF('irrig')" style="height:32px;font-size:12px"></div>
+        <div class="filter-field"><div class="filter-label">Até</div><input type="month" class="input" id="fi-d2" onchange="applyF('irrig')" style="height:32px;font-size:12px"></div>
+      </div>
+      <div class="kpi-grid" id="irrig-kpis"></div>
+      <div class="g21">
+        <div class="card"><div class="card-header"><div class="card-title">Planejado × Executado por Motivo</div></div><div class="card-body" id="irrig-pxe"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Distribuição de Impactos</div></div><div class="card-body" style="display:flex;justify-content:center;align-items:center;min-height:170px" id="irrig-donut"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="card-header"><div class="card-title">Evolução Mensal</div></div><div class="card-body" id="irrig-ev"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Top 10 Causas de Parada</div></div><div class="card-body" id="irrig-caus"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="card-header"><div class="card-title">Horas Irrigadas / Mês (Horímetro)</div></div><div class="card-body" id="irrig-hor-mes"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Pivôs com mais Paradas</div></div><div class="card-body" id="irrig-piv-par"></div></div>
+      </div>
+      <div class="card"><div class="card-header"><div class="card-title">Ranking de Pivôs</div><span style="font-size:10px;color:var(--text-tertiary)" id="irrig-rk-cnt"></span></div><div class="card-body card-body-flush"><div class="table-wrap" id="irrig-rk"></div></div></div>
+    </div>
+  </div>
+
+  <!-- FERTI -->
+  <div class="page" id="page-ferti">
+    <div class="page-wrap">
+      <div class="page-header">
+        <div><div class="page-title">Fertirrigação</div><div class="page-subtitle">Planejado × Executado · Base de fertirrigação</div></div>
+        <div class="page-actions">
+          <button class="btn btn-ghost" onclick="goPage('lanc')">Registrar Fertirrigação</button>
+          <button class="btn btn-ghost btn-xs" onclick="resetF('ferti')">✕ Limpar</button>
+          <button class="btn btn-primary btn-xs" onclick="applyF('ferti')">Aplicar</button>
+        </div>
+      </div>
+
+      <div class="section-title">Fertirrigação Operacional <span class="badge b-success" style="margin-left:6px">Dados reais</span></div>
+      <div class="kpi-grid" style="margin-bottom:.9rem" id="fto-kpis"></div>
+      <div class="g3" style="margin-bottom:.9rem">
+        <div class="card"><div class="card-header"><div class="card-title">Produtos Mais Utilizados</div></div><div class="card-body" id="fto-produtos"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Aplicações por Pivô (Top 10)</div></div><div class="card-body" id="fto-pivo"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Aplicações por Fazenda</div></div><div class="card-body" id="fto-fazenda"></div></div>
+      </div>
+      <div class="g4" style="margin-bottom:.9rem">
+        <div class="card"><div class="card-header"><div class="card-title">Aplicações por Cultura</div></div><div class="card-body" id="fto-cultura"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Aplicações por Safra</div></div><div class="card-body" id="fto-safra"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Aplicações por Operador</div></div><div class="card-body" id="fto-operador"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Evolução das Aplicações</div></div><div class="card-body" id="fto-evolucao"></div></div>
+      </div>
+
+      <div class="section-title">Analítico Consolidado <span style="font-size:9.5px;color:var(--text-tertiary);margin-left:6px">base ETL histórica</span></div>
+      <div class="filter-bar">
+        <div class="filter-field"><div class="filter-label">Cultura</div><select class="select" id="ff-cl" onchange="applyF('ferti')" style="height:32px;font-size:12px"><option value="">Todas</option></select></div>
+        <div class="filter-field"><div class="filter-label">Motivo</div><select class="select" id="ff-mt" onchange="applyF('ferti')" style="height:32px;font-size:12px"><option value="">Todos</option><option>Realizado</option><option>Operacional</option><option>Logística</option><option>Mecânico</option><option>Elétrico</option><option>Cancelado</option></select></div>
+        <div class="filter-field"><div class="filter-label">De</div><input type="month" class="input" id="ff-d1" onchange="applyF('ferti')" style="height:32px;font-size:12px"></div>
+        <div class="filter-field"><div class="filter-label">Até</div><input type="month" class="input" id="ff-d2" onchange="applyF('ferti')" style="height:32px;font-size:12px"></div>
+      </div>
+      <div class="kpi-grid" id="ferti-kpis"></div>
+      <div class="g21">
+        <div class="card"><div class="card-header"><div class="card-title">Realizado × Paradas por Mês</div></div><div class="card-body" id="ferti-ev"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Distribuição por Motivo</div></div><div class="card-body" style="display:flex;justify-content:center;padding:1rem" id="ferti-donut"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="card-header"><div class="card-title">Top Causas de Não Realização</div></div><div class="card-body" id="ferti-caus"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Ferti por Cultura</div></div><div class="card-body" id="ferti-cult"></div></div>
+      </div>
+      <div class="card"><div class="card-header"><div class="card-title">Registros de Fertirrigação</div><span style="font-size:10px;color:var(--text-tertiary)" id="ferti-tbl-cnt"></span></div>
+        <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+          <div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="ferti-q" placeholder="Buscar pivô, cultura, status..." oninput="rFertiTbl()" style="height:30px;font-size:12px"></div>
+          <button class="btn btn-ghost btn-xs" onclick="exportMod('ferti')">↓ CSV</button>
+        </div>
+        <div class="table-wrap" id="ferti-tbl" style="max-height:380px;overflow-y:auto"></div>
+        <div id="ferti-pg" class="pag" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ITV: INTERVALO DE PARADAS -->
+  <div class="page" id="page-itv">
+    <div class="page-wrap">
+      <div class="page-header">
+        <div><div class="page-title">Paradas</div><div class="page-subtitle">Intervalo de paradas · análise de tempos, causas e impactos</div></div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-xs" onclick="resetF('itv')">✕ Limpar</button>
+          <button class="btn btn-primary btn-xs" onclick="applyF('itv')">Aplicar</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-field"><div class="filter-label">Tipo</div><select class="select" id="fi2-tp" onchange="applyF('itv')" style="height:32px;font-size:12px"><option value="">Todos</option><option>Operacional</option><option>Mecânico</option><option>Elétrico</option></select></div>
+        <div class="filter-field"><div class="filter-label">De</div><input type="month" class="input" id="fi2-d1" onchange="applyF('itv')" style="height:32px;font-size:12px"></div>
+        <div class="filter-field"><div class="filter-label">Até</div><input type="month" class="input" id="fi2-d2" onchange="applyF('itv')" style="height:32px;font-size:12px"></div>
+      </div>
+      <div class="kpi-grid" id="itv-kpis"></div>
+      <div class="g2">
+        <div class="card"><div class="card-header"><div class="card-title">Paradas por Tipo — Horas</div></div><div class="card-body" id="itv-tipo"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Pareto — Causas (horas + % acumulado)</div></div><div class="card-body" id="itv-pareto"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="card-header"><div class="card-title">Paradas por Pivô — Horas (Top 15)</div></div><div class="card-body" id="itv-pivo"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Evolução Mensal</div></div><div class="card-body" id="itv-ev"></div></div>
+      </div>
+      <div class="card"><div class="card-header"><div class="card-title">Heatmap — Pivô × Mês (Qtd. Paradas)</div></div><div class="card-body card-body-flush" id="itv-heatmap"></div></div>
+    </div>
+  </div>
+
+  <!-- HOR: HORÍMETRO (Fato_Horimetro) -->
+  <div class="page" id="page-hor">
+    <div class="page-wrap">
+      <div class="page-header">
+        <div><div class="page-title">Equipamentos</div><div class="page-subtitle">Fato_Horimetro · Base Consolidada — KARITEL + RDM + CSV</div></div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-xs" onclick="resetF('hor')">✕ Limpar</button>
+          <button class="btn btn-primary btn-xs" onclick="exportMod('hor')">↓ CSV</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-field"><div class="filter-label">Fazenda</div><select class="select" id="fh-faz" onchange="applyF('hor')" style="height:32px;font-size:12px"><option value="">Ambas</option><option>KARITEL</option><option>RDM</option></select></div>
+        <div class="filter-field"><div class="filter-label">Cultura</div><select class="select" id="fh-cl" onchange="applyF('hor')" style="height:32px;font-size:12px"><option value="">Todas</option></select></div>
+        <div class="filter-field"><div class="filter-label">Origem</div><select class="select" id="fh-orig" onchange="applyF('hor')" style="height:32px;font-size:12px"><option value="">Todas</option><option>KARITEL</option><option>RDM</option><option>CSV</option></select></div>
+        <div class="filter-field"><div class="filter-label">De</div><input type="month" class="input" id="fh-d1" onchange="applyF('hor')" style="height:32px;font-size:12px"></div>
+        <div class="filter-field"><div class="filter-label">Até</div><input type="month" class="input" id="fh-d2" onchange="applyF('hor')" style="height:32px;font-size:12px"></div>
+      </div>
+      <!-- ETL Status Card -->
+      <div class="card" style="margin-bottom:.9rem;background:linear-gradient(135deg,#0d1f2d,#132133);border-color:rgba(27,158,110,.25)">
+        <div class="card-body" id="hor-etl-card"></div>
+      </div>
+      <!-- Lançamentos locais (novos, ainda fora do ETL consolidado) -->
+      <div class="card" style="margin-bottom:.9rem" id="hor-local-card">
+        <div class="card-header">
+          <div class="card-title">Lançamentos Locais (novos, ainda não consolidados no ETL)</div>
+          <button class="btn btn-ghost btn-xs" onclick="goPage('lanc')">Abrir Lançamentos</button>
+        </div>
+        <div class="card-body" id="hor-local-body"></div>
+      </div>
+      <!-- Calibração de Lâmina -->
+      <div class="card" style="margin-bottom:.9rem" id="hor-calib-card">
+        <div class="card-header">
+          <div class="card-title">Calibração de Lâmina</div>
+          <button class="btn btn-ghost btn-xs" onclick="goPage('lanc')">Abrir Calibração</button>
+        </div>
+        <div class="card-body">
+          <div class="kpi-grid" style="margin-bottom:.9rem" id="hor-calib-kpis"></div>
+          <div class="table-wrap" id="hor-calib-tbl"></div>
+        </div>
+      </div>
+      <div class="kpi-grid" id="hor-kpis"></div>
+      <div class="g21">
+        <div class="card"><div class="card-header"><div class="card-title">Evolução de Horas Irrigadas</div></div><div class="card-body" id="hor-ev"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">KARITEL × RDM</div></div><div class="card-body" style="display:flex;justify-content:center" id="hor-donut"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="card-header"><div class="card-title">Top 15 Pivôs — Horas</div></div><div class="card-body" id="hor-piv"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Por Cultura</div></div><div class="card-body" id="hor-cult"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="card-header"><div class="card-title">Comparativo Mensal KARITEL × RDM</div></div><div class="card-body" id="hor-comp"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Top 10 Operadores</div></div><div class="card-body" id="hor-oper"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAL: INDICADORES (módulo Indicadores) — MTBF/MTTR -->
+  <div class="page" id="page-fal">
+    <div class="page-wrap">
+      <div class="page-header">
+        <div><div class="page-title">Eficiência</div><div class="page-subtitle">Disponibilidade, utilização, MTBF/MTTR e falhas por pivô</div></div>
+        <div class="page-actions"><button class="btn btn-ghost" onclick="goPage('lanc')">Registrar Falha</button></div>
+      </div>
+
+      <div class="section-title">Indicadores Operacionais <span class="badge b-success" style="margin-left:6px">Dados reais (Horímetro + Falhas)</span></div>
+      <div class="kpi-grid" id="fal-op-kpis"></div>
+      <div class="g3" style="margin-bottom:.9rem">
+        <div class="card"><div class="card-header"><div class="card-title">Horas por Pivô (Top 10)</div></div><div class="card-body" id="fal-op-pivo"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Horas por Fazenda</div></div><div class="card-body" id="fal-op-fazenda"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Horas por Casa de Bomba</div></div><div class="card-body" id="fal-op-casabomba"></div></div>
+      </div>
+      <div class="g3" style="margin-bottom:.9rem">
+        <div class="card"><div class="card-header"><div class="card-title">Disponibilidade × Utilização (6 meses)</div></div><div class="card-body" id="fal-op-evolucao"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Distribuição das Falhas por Categoria</div></div><div class="card-body" style="display:flex;justify-content:center" id="fal-op-donut"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Horas por Operador</div></div><div class="card-body" id="fal-op-operador"></div></div>
+      </div>
+
+      <div class="section-title">Paradas Operacionais <span class="badge b-success" style="margin-left:6px">Dados reais</span></div>
+      <div class="kpi-grid" style="margin-bottom:.9rem" id="par-kpis"></div>
+      <div class="g3" style="margin-bottom:.9rem">
+        <div class="card"><div class="card-header"><div class="card-title">Tempo Parado por Categoria</div></div><div class="card-body" style="display:flex;justify-content:center" id="par-categoria"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Ranking de Falhas</div></div><div class="card-body" id="par-ranking-falhas"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Pivôs com Maior Indisponibilidade</div></div><div class="card-body" id="par-ranking-pivos"></div></div>
+      </div>
+      <div class="g2" style="margin-bottom:.9rem">
+        <div class="card"><div class="card-header"><div class="card-title">Paradas por Fazenda</div></div><div class="card-body" id="par-fazenda"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Evolução Mensal — Tempo Parado</div></div><div class="card-body" id="par-evolucao"></div></div>
+      </div>
+
+      <div class="section-title">Analítico Consolidado <span style="font-size:9.5px;color:var(--text-tertiary);margin-left:6px">base ETL histórica</span></div>
+      <div class="kpi-grid" id="fal-kpis"></div>
+      <div class="g2">
+        <div class="card"><div class="card-header"><div class="card-title" style="color:#2563eb">Falhas Mecânicas</div></div><div class="card-body" id="fal-mec"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title" style="color:#dc2626">Falhas Elétricas</div></div><div class="card-body" id="fal-ele"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="card-header"><div class="card-title" style="color:#d97706">Falhas Operacionais</div></div><div class="card-body" id="fal-oper-bars"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Evolução Mensal por Tipo</div></div><div class="card-body" id="fal-ev"></div></div>
+      </div>
+      <div class="card"><div class="card-header"><div class="card-title">Detalhamento por Causa</div></div><div class="table-wrap" id="fal-det" style="max-height:360px;overflow-y:auto"></div></div>
+    </div>
+  </div>
+
+
+  <!-- LANC: LANÇAMENTOS ─────────────────────────────────────── -->
+    <!-- ═══════════════════════════════════════════════════════════
+       MÓDULO: LANÇAMENTO DE HORÍMETRO
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="page" id="page-lanc">
+    <div class="page-wrap">
+
+      <div class="page-header">
+        <div>
+          <div class="page-title">Lançamentos</div>
+          <div class="page-subtitle">
+            Horímetro, paradas, fertirrigação e calibração · preenchimento automático por histórico e tabelas de referência
+          </div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost" onclick="lhm.tabNav('historico')">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Ver Histórico
+          </button>
+          <button class="btn btn-primary" onclick="lhm.novo()">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo Lançamento
+          </button>
+        </div>
+      </div>
+
+      <!-- ── ABAS (Fase 13.1: lista simples, sem rótulos de grupo — os
+           nomes já representam o processo operacional sozinhos. Nenhum
+           id/onclick mudou, só a remoção dos rótulos.) ────────────────── -->
+      <div class="lanc-sidenav" style="display:flex;border-bottom:1.5px solid var(--border);margin-bottom:1.1rem">
+        <button class="tab-btn active" id="lhm-tab-lanc" onclick="lhm.tabNav('lanc',this)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 3.5"/></svg>
+          Horímetro
+        </button>
+        <button class="tab-btn" id="lhm-tab-parada" onclick="lhm.tabNav('parada',this)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="16" y1="16" x2="12" y2="12"/></svg>
+          Parada
+        </button>
+        <button class="tab-btn" id="lhm-tab-falha" onclick="lhm.tabNav('falha',this)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          Falha / Indicador
+        </button>
+        <button class="tab-btn" id="lhm-tab-ferti" onclick="lhm.tabNav('ferti',this)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+          Fertirrigação
+        </button>
+        <button class="tab-btn" id="lhm-tab-calibracao" onclick="lhm.tabNav('calibracao',this)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/><path d="M12 8v4l2 2"/></svg>
+          Calibração de Lâmina
+        </button>
+        <button class="tab-btn" id="lhm-tab-historico" onclick="lhm.tabNav('historico',this)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+          Histórico
+        </button>
+        <button class="tab-btn" id="lhm-tab-auditoria" onclick="lhm.tabNav('auditoria',this)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Auditoria
+        </button>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           PAINEL: NOVO LANÇAMENTO
+      ══════════════════════════════════════════════════════════════ -->
+      <div id="lhm-panel-lanc">
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:.9rem;align-items:start">
+
+          <!-- FORMULÁRIO PRINCIPAL -->
+          <div>
+
+            <!-- ── SEÇÃO 1: SELEÇÃO INICIAL ────────────────────── -->
+            <div class="card" style="margin-bottom:.9rem">
+              <div class="card-header" style="background:linear-gradient(90deg,var(--brand-600),var(--brand-500));border-radius:var(--radius-lg) var(--radius-lg) 0 0">
+                <div class="card-title" style="color:#fff">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2.2" style="margin-right:4px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  Seção 1 — Identificação do Equipamento
+                </div>
+                <span class="badge" style="background:rgba(255,255,255,.2);color:#fff;font-size:10px">Passo 1 de 3</span>
+              </div>
+              <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+                  <div class="field">
+                    <label>Fazenda <span class="req">*</span></label>
+                    <select class="select" id="lhm-faz" onchange="lhm.onFaz()">
+                      <option value="">Selecione...</option>
+                      <option value="KARITEL">KARITEL</option>
+                      <option value="RDM">RDM</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Pivô / Equipamento <span class="req">*</span></label>
+                    <select class="select" id="lhm-pivo" onchange="lhm.onPivo()" disabled>
+                      <option value="">Selecione a fazenda</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Cultura <span class="req">*</span></label>
+                    <select class="select" id="lhm-cult" disabled>
+                      <option value="">Selecione o pivô</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem">
+                  <div class="field">
+                    <label>Safra</label>
+                    <select class="select" id="lhm-safra" disabled>
+                      <option value="">Selecione</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Área do Pivô</label>
+                    <select class="select" id="lhm-area">
+                      <option value="COMPLETO">COMPLETO</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Operador Responsável</label>
+                    <input type="text" class="input" id="lhm-oper" placeholder="Nome do operador" autocomplete="off">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── SEÇÃO 2: HORÍMETROS ─────────────────────────── -->
+            <div class="card" id="lhm-sec2" style="margin-bottom:.9rem;opacity:.5;pointer-events:none">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 3.5"/></svg>
+                  Seção 2 — Leitura de Horímetros
+                </div>
+                <div style="display:flex;align-items:center;gap:.5rem">
+                  <span class="badge b-neutral" style="font-size:9px">Passo 2 de 3</span>
+                  <span id="lhm-horas-badge" class="badge b-neutral">Informe os horímetros</span>
+                </div>
+              </div>
+              <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.5rem">
+                  <div class="field">
+                    <label style="display:flex;align-items:center;justify-content:space-between">
+                      <span>Horímetro Inicial <span class="req">*</span></span>
+                      <span id="lhm-h1-autolbl" style="font-size:9.5px;color:var(--brand-600);font-weight:700"></span>
+                    </label>
+                    <div style="position:relative">
+                      <input type="number" class="input" id="lhm-h1" placeholder="Ex: 1.254,80"
+                        step="0.1" min="0" oninput="lhm.onH1()" style="padding-right:56px">
+                      <button id="lhm-h1-unlock" onclick="lhm.unlockH1()"
+                        style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);
+                        padding:2px 6px;border-radius:20px;border:1px solid var(--brand-300);
+                        background:var(--brand-50);color:var(--brand-700);font-size:9.5px;font-weight:700;cursor:pointer;
+                        white-space:nowrap;z-index:2" title="Clique para editar manualmente">
+                        🔒 Auto
+                      </button>
+                    </div>
+                    <div class="field-hint" id="lhm-h1-hint" style="color:var(--brand-600)"></div>
+                  </div>
+                  <div class="field">
+                    <label>Horímetro Final <span class="req">*</span></label>
+                    <input type="number" class="input" id="lhm-h2" placeholder="Ex: 1.268,40"
+                      step="0.1" min="0" oninput="lhm.calc()" autofocus>
+                    <div class="field-hint" id="lhm-h2-err" style="color:var(--c-danger);font-weight:600"></div>
+                  </div>
+                  <div class="field">
+                    <label>⏱ Horas Trabalhadas</label>
+                    <div id="lhm-horas-display"
+                      style="display:flex;align-items:center;justify-content:center;height:36px;
+                      border:1.5px solid var(--border);border-radius:var(--radius-sm);
+                      background:color-mix(in srgb,var(--brand-500) 7%,var(--bg-surface));
+                      font-size:22px;font-weight:800;color:var(--brand-700);letter-spacing:-.02em">
+                      —
+                    </div>
+                    <div class="field-hint" id="lhm-horas-hint"></div>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+                  <div class="field">
+                    <label>Data do Lançamento <span class="req">*</span></label>
+                    <input type="date" class="input" id="lhm-data" onchange="lhm.onData()">
+                    <div class="field-hint" id="lhm-data-err" style="color:var(--c-danger);font-weight:600"></div>
+                  </div>
+                  <div class="field">
+                    <label>Hora Início (opcional)</label>
+                    <input type="time" class="input" id="lhm-hora">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── SEÇÃO 3: IRRIGAÇÃO ──────────────────────────── -->
+            <div class="card" style="margin-bottom:.9rem">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#0284c7" stroke-width="2.2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                  Seção 3 — Parâmetros de Irrigação
+                </div>
+                <span class="badge b-neutral" style="font-size:9px">Passo 3 de 3</span>
+              </div>
+              <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+                  <div class="field">
+                    <label style="display:flex;align-items:center;justify-content:space-between">
+                      <span>Percentual (%)</span>
+                      <span id="lhm-pct-lbl" style="font-size:9px;color:var(--text-tertiary)"></span>
+                    </label>
+                    <div style="position:relative">
+                      <input type="number" class="input" id="lhm-pct" placeholder="100"
+                        step="5" min="0" max="100" oninput="lhm.onPct()">
+                      <span style="position:absolute;right:9px;top:50%;transform:translateY(-50%);
+                        font-size:12px;color:var(--text-tertiary);pointer-events:none">%</span>
+                    </div>
+                    <div class="field-hint" id="lhm-pct-err" style="color:var(--c-danger)"></div>
+                  </div>
+                  <div class="field">
+                    <label style="display:flex;align-items:center;justify-content:space-between">
+                      <span>Lâmina (mm)</span>
+                      <span id="lhm-lam-autolbl" style="font-size:9.5px;color:var(--brand-600);font-weight:700"></span>
+                    </label>
+                    <input type="number" class="input" id="lhm-lam" placeholder="0.00"
+                      step="0.01" readonly
+                      style="background:color-mix(in srgb,var(--brand-500) 6%,var(--bg-surface));
+                      color:var(--brand-700);font-weight:700">
+                  </div>
+                  <div class="field">
+                    <label>Pressão (kPa)</label>
+                    <input type="number" class="input" id="lhm-pres" placeholder="0.0" step="0.1">
+                  </div>
+                  <div class="field">
+                    <label>Horas Ociosas</label>
+                    <input type="number" class="input" id="lhm-hoc" placeholder="0.0"
+                      step="0.1" min="0" oninput="lhm.calc()">
+                  </div>
+                </div>
+                <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-4-4L4 16v4Z"/></svg>Informações Complementares</div>
+                <div class="field">
+                  <label>Observação</label>
+                  <textarea class="textarea" id="lhm-obs" rows="2"
+                    placeholder="Ocorrências durante a irrigação, condições do equipamento..."></textarea>
+                </div>
+                <div class="op-anexo" style="margin-top:.6rem">
+                  <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Anexos (fotos, comprovantes) — estrutura preparada para uma futura versão
+                  <span class="tag">Em breve</span>
+                </div>
+              </div>
+
+              <!-- Barra de progresso percentual -->
+              <div id="lhm-pct-bar-wrap" style="display:none;padding:.6rem 1.1rem;border-top:1px solid var(--border);background:var(--bg-surface2)">
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-tertiary);margin-bottom:4px">
+                  <span>0%</span><span id="lhm-pct-bar-lbl">—</span><span>100%</span>
+                </div>
+                <div style="height:6px;background:var(--bg-surface3);border-radius:3px;overflow:hidden">
+                  <div id="lhm-pct-bar" style="height:100%;border-radius:3px;background:var(--brand-600);transition:width .3s ease;width:0%"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:6px">
+                  <button onclick="lhm.setPct(50)" class="btn btn-ghost btn-xs" style="font-size:10px">50%</button>
+                  <button onclick="lhm.setPct(60)" class="btn btn-ghost btn-xs" style="font-size:10px">60%</button>
+                  <button onclick="lhm.setPct(70)" class="btn btn-ghost btn-xs" style="font-size:10px">70%</button>
+                  <button onclick="lhm.setPct(80)" class="btn btn-ghost btn-xs" style="font-size:10px">80%</button>
+                  <button onclick="lhm.setPct(100)" class="btn btn-primary btn-xs" style="font-size:10px">100%</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── RODAPÉ DO FORMULÁRIO ────────────────────────── -->
+            <div style="display:flex;align-items:center;justify-content:space-between;
+              padding:.8rem 1rem;background:var(--bg-surface);border:1px solid var(--border);
+              border-radius:var(--radius);box-shadow:var(--shadow-xs)">
+              <div style="font-size:11.5px;color:var(--text-secondary)" id="lhm-footer-msg">
+                Preencha Fazenda e Pivô para ativar o preenchimento automático
+              </div>
+              <div style="display:flex;gap:.5rem">
+                <button class="btn btn-ghost" onclick="lhm.cancelar()">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Cancelar
+                </button>
+                <button class="btn btn-ghost" onclick="lhm.limpar()">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  Limpar
+                </button>
+                <button class="btn btn-primary" id="lhm-salvar-btn" onclick="lhm.salvar()">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span id="lhm-salvar-lbl">Salvar Lançamento</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── PAINEL LATERAL ──────────────────────────────────── -->
+          <div style="display:flex;flex-direction:column;gap:.8rem">
+
+            <!-- Card: Status do equipamento -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Equipamento</div>
+                <span id="lhm-equip-badge" class="badge b-neutral">Aguardando</span>
+              </div>
+              <div id="lhm-equip-panel" style="padding:.9rem 1rem">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:.5rem;color:var(--text-tertiary)">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--border-strong)" stroke-width="1"><path d="M12 22V12"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/></svg>
+                  <span style="font-size:12px">Selecione o pivô</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card: Tabela de lâminas -->
+            <div class="card" id="lhm-lam-card" style="display:none">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#0284c7" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                  Tabela de Lâminas
+                </div>
+              </div>
+              <div id="lhm-lam-table" style="padding:0 .85rem .85rem"></div>
+            </div>
+
+            <!-- Card: Resumo do lançamento -->
+            <div class="card" id="lhm-resumo-card" style="display:none">
+              <div class="card-header">
+                <div class="card-title">Resumo do Lançamento</div>
+              </div>
+              <div id="lhm-resumo-body" style="padding:.85rem 1rem"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           PAINEL: FALHA / INDICADOR
+      ══════════════════════════════════════════════════════════════ -->
+      <div id="lhm-panel-falha" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:.9rem;align-items:start;margin-bottom:.9rem">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Registrar Falha / Indicador</div></div>
+            <div class="card-body">
+              <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M3 21V10l9-6 9 6v11"/><path d="M9 21v-6h6v6"/></svg>Identificação</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+                <div class="field"><label>Data <span class="req">*</span></label><input type="date" class="input" id="lhf-data"></div>
+                <div class="field"><label>Pivô <span class="req">*</span></label><select class="select" id="lhf-pivo" onchange="lhf.onPivo()"><option value="">Selecione...</option></select></div>
+                <div class="field"><label>Categoria <span class="req">*</span></label><select class="select" id="lhf-cat" onchange="lhf.onCategoria()"><option value="">Selecione...</option></select></div>
+              </div>
+              <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Dados Operacionais</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+                <div class="field"><label>Motivo <span class="req">*</span></label><select class="select" id="lhf-motivo" onchange="lhf.onMotivo()" disabled><option value="">Selecione a categoria</option></select></div>
+                <div class="field"><label>Submotivo</label><input type="text" class="input" id="lhf-submotivo" readonly placeholder="—"></div>
+              </div>
+              <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-4-4L4 16v4Z"/></svg>Informações Complementares</div>
+              <div class="field"><label>Observação</label><textarea class="textarea" id="lhf-obs" rows="2"></textarea></div>
+              <div class="op-anexo" style="margin-top:.6rem">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Anexos (fotos da falha) — estrutura preparada
+                <span class="tag">Em breve</span>
+              </div>
+            </div>
+            <div class="card-footer">
+              <div style="font-size:11px;color:var(--text-tertiary)" id="lhf-footer-msg">Categoria/Motivo vêm do cadastro de Falhas — edite-o em Cadastros se faltar alguma opção.</div>
+              <div style="display:flex;gap:.5rem">
+                <button class="btn btn-ghost" onclick="lhf.limpar()">Limpar</button>
+                <button class="btn btn-primary" id="lhf-salvar-btn" onclick="lhf.salvar()"><span id="lhf-salvar-lbl">Registrar</span></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Painel lateral: contexto do equipamento (mesmo padrão do
+               painel de Horímetro — lhm.renderEquipamento) — só exibe dados
+               já existentes (cadastro do pivô + histórico de ocorrências),
+               nenhum campo novo. -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Equipamento</div>
+              <span id="lhf-equip-badge" class="badge b-neutral">Aguardando</span>
+            </div>
+            <div id="lhf-equip-panel" style="padding:.9rem 1rem">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:.5rem;color:var(--text-tertiary)">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--border-strong)" stroke-width="1"><path d="M12 22V12"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/></svg>
+                <span style="font-size:12px">Selecione o pivô</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Ocorrências Registradas</div><span id="lhf-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <div class="search-bar" style="flex:1;min-width:140px"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="lhf-q" oninput="lhf.render()" placeholder="Buscar pivô, categoria, motivo..." style="height:30px;font-size:12px"></div>
+            <select class="select" id="lhf-filtro-faz" onchange="lhf.render()" style="height:30px;font-size:12px;min-width:110px"><option value="">Fazenda</option></select>
+            <select class="select" id="lhf-filtro-cb" onchange="lhf.render()" style="height:30px;font-size:12px;min-width:130px"><option value="">Casa de Bomba</option></select>
+            <select class="select" id="lhf-filtro-pivo" onchange="lhf.render()" style="height:30px;font-size:12px;min-width:100px"><option value="">Pivô</option></select>
+            <button class="btn btn-ghost btn-xs" onclick="lhf.clear()">✕ Limpar</button>
+          </div>
+          <div class="table-wrap" id="lhf-tbl" style="max-height:380px;overflow-y:auto"></div>
+          <div id="lhf-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           PAINEL: PARADA
+      ══════════════════════════════════════════════════════════════ -->
+      <div id="lhm-panel-parada" style="display:none">
+        <div class="card" style="margin-bottom:.9rem">
+          <div class="card-header"><div class="card-title">Registrar Parada Operacional</div></div>
+          <div class="card-body">
+            <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M3 21V10l9-6 9 6v11"/><path d="M9 21v-6h6v6"/></svg>Identificação</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Data <span class="req">*</span></label><input type="date" class="input" id="lp-data"></div>
+              <div class="field"><label>Hora Inicial <span class="req">*</span></label><input type="time" class="input" id="lp-h1" oninput="lp.calc()"></div>
+              <div class="field"><label>Hora Final <span class="req">*</span></label><input type="time" class="input" id="lp-h2" oninput="lp.calc()"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Fazenda <span class="req">*</span></label><select class="select" id="lp-faz" onchange="lp.onFaz()"><option value="">Selecione...</option></select></div>
+              <div class="field"><label>Pivô <span class="req">*</span></label><select class="select" id="lp-pivo" onchange="lp.onPivo()" disabled><option value="">Selecione a fazenda</option></select></div>
+              <div class="field"><label>Casa de Bomba</label><input type="text" class="input" id="lp-casabomba" readonly placeholder="—"></div>
+            </div>
+            <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Dados Operacionais</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Categoria <span class="req">*</span></label><select class="select" id="lp-cat" onchange="lp.onCategoria()"><option value="">Selecione...</option></select></div>
+              <div class="field"><label>Motivo <span class="req">*</span></label><select class="select" id="lp-motivo" onchange="lp.onMotivo()" disabled><option value="">Selecione a categoria</option></select></div>
+              <div class="field"><label>Tipo de Parada <span class="req">*</span></label><select class="select" id="lp-tipo"><option value="Não Programada">Não Programada</option><option value="Programada">Programada</option></select></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Submotivo</label><input type="text" class="input" id="lp-submotivo" readonly placeholder="—"></div>
+              <div class="field"><label>Criticidade</label><input type="text" class="input" id="lp-criticidade" readonly placeholder="—"></div>
+              <div class="field"><label>Prioridade</label><input type="text" class="input" id="lp-prioridade" readonly placeholder="—"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Operador</label><input type="text" class="input" id="lp-oper" placeholder="Nome do operador" autocomplete="off"></div>
+              <div class="field"><label>Técnico</label><select class="select" id="lp-tecnico"><option value="">Não informado</option></select></div>
+              <div class="field"><label>⏱ Tempo Parado</label><div id="lp-tempo-display" style="display:flex;align-items:center;justify-content:center;height:36px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:color-mix(in srgb,var(--c-danger) 7%,var(--bg-surface));font-size:18px;font-weight:800;color:var(--c-danger)">—</div></div>
+            </div>
+            <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-4-4L4 16v4Z"/></svg>Informações Complementares</div>
+            <div class="field"><label>Observações</label><textarea class="textarea" id="lp-obs" rows="2"></textarea></div>
+            <div class="op-anexo" style="margin-top:.6rem">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Anexos (evidência da parada) — estrutura preparada
+              <span class="tag">Em breve</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:11px;color:var(--text-tertiary)" id="lp-footer-msg">Preencha fazenda e pivô — categoria/motivo vêm do cadastro de Falhas.</div>
+            <div style="display:flex;gap:.5rem">
+              <button class="btn btn-ghost" onclick="lp.limpar()">Limpar</button>
+              <button class="btn btn-primary" id="lp-salvar-btn" onclick="lp.salvar()"><span id="lp-salvar-lbl">Registrar Parada</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="lp-resumo" style="display:none">
+          <div class="kpi-grid" style="margin-bottom:.9rem" id="lp-resumo-kpis"></div>
+          <div class="g2" style="margin-bottom:.9rem">
+            <div class="card"><div class="card-header"><div class="card-title">Linha do Tempo (tempo parado por ocorrência)</div></div><div class="card-body" id="lp-resumo-evolucao"></div></div>
+            <div class="card"><div class="card-header"><div class="card-title">Ranking de Motivos</div></div><div class="card-body" id="lp-resumo-ranking"></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Paradas Registradas</div><span id="lp-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <div class="search-bar" style="flex:1;min-width:140px"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="lp-q" oninput="lp.render()" placeholder="Buscar pivô, categoria, motivo..." style="height:30px;font-size:12px"></div>
+            <select class="select" id="lp-filtro-faz" onchange="lp.render()" style="height:30px;font-size:12px;min-width:110px"><option value="">Fazenda</option></select>
+            <select class="select" id="lp-filtro-cb" onchange="lp.render()" style="height:30px;font-size:12px;min-width:130px"><option value="">Casa de Bomba</option></select>
+            <select class="select" id="lp-filtro-pivo" onchange="lp.render()" style="height:30px;font-size:12px;min-width:100px"><option value="">Pivô</option></select>
+            <button class="btn btn-ghost btn-xs" onclick="lp.clear()">✕ Limpar</button>
+          </div>
+          <div class="table-wrap" id="lp-tbl" style="max-height:420px;overflow-y:auto"></div>
+          <div id="lp-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           PAINEL: FERTIRRIGAÇÃO
+      ══════════════════════════════════════════════════════════════ -->
+      <div id="lhm-panel-ferti" style="display:none">
+        <div class="card" style="margin-bottom:.9rem">
+          <div class="card-header"><div class="card-title">Registrar Fertirrigação</div></div>
+          <div class="card-body">
+            <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M3 21V10l9-6 9 6v11"/><path d="M9 21v-6h6v6"/></svg>Identificação</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Data <span class="req">*</span></label><input type="date" class="input" id="lft-data"></div>
+              <div class="field"><label>Hora Inicial <span class="req">*</span></label><input type="time" class="input" id="lft-h1" oninput="lft.calc()"></div>
+              <div class="field"><label>Hora Final <span class="req">*</span></label><input type="time" class="input" id="lft-h2" oninput="lft.calc()"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Fazenda <span class="req">*</span></label><select class="select" id="lft-faz" onchange="lft.onFaz()"><option value="">Selecione...</option></select></div>
+              <div class="field"><label>Pivô <span class="req">*</span></label><select class="select" id="lft-pivo" onchange="lft.onPivo()" disabled><option value="">Selecione a fazenda</option></select></div>
+              <div class="field"><label>Casa de Bomba</label><input type="text" class="input" id="lft-casabomba" readonly placeholder="—"></div>
+            </div>
+            <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Dados Operacionais</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Cultura <span class="req">*</span></label><select class="select" id="lft-cultura"><option value="">Selecione...</option></select></div>
+              <div class="field"><label>Safra</label><select class="select" id="lft-safra"><option value="">Selecione</option></select></div>
+              <div class="field"><label>Produto <span class="req">*</span></label><select class="select" id="lft-produto" onchange="lft.onProduto()"><option value="">Selecione...</option></select></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Categoria do Produto</label><input type="text" class="input" id="lft-categoria" readonly placeholder="—"></div>
+              <div class="field"><label>Quantidade Aplicada <span class="req">*</span></label><input type="number" class="input" id="lft-qtd" step="0.01" min="0"></div>
+              <div class="field"><label>Unidade de Medida</label><input type="text" class="input" id="lft-unidade" readonly placeholder="—"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Concentração</label><input type="number" class="input" id="lft-conc" step="0.01" min="0" placeholder="opcional"></div>
+              <div class="field"><label>Volume de Água (L)</label><input type="number" class="input" id="lft-volume" step="0.1" min="0" placeholder="opcional"></div>
+              <div class="field"><label>Vazão</label><input type="number" class="input" id="lft-vazao" step="0.1" min="0" placeholder="opcional"></div>
+              <div class="field"><label>⏱ Tempo de Aplicação</label><div id="lft-tempo-display" style="display:flex;align-items:center;justify-content:center;height:36px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:color-mix(in srgb,#0284c7 7%,var(--bg-surface));font-size:16px;font-weight:800;color:#0284c7">—</div></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Operador</label><input type="text" class="input" id="lft-oper" placeholder="Nome do operador" autocomplete="off"></div>
+            </div>
+            <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-4-4L4 16v4Z"/></svg>Informações Complementares</div>
+            <div class="field"><label>Observações</label><textarea class="textarea" id="lft-obs" rows="2"></textarea></div>
+            <div class="op-anexo" style="margin-top:.6rem">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Anexos (nota fiscal do produto) — estrutura preparada
+              <span class="tag">Em breve</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:11px;color:var(--text-tertiary)" id="lft-footer-msg">Produto/Categoria/Unidade vêm do cadastro — edite-o em Cadastros se faltar alguma opção.</div>
+            <div style="display:flex;gap:.5rem">
+              <button class="btn btn-ghost" onclick="lft.limpar()">Limpar</button>
+              <button class="btn btn-primary" id="lft-salvar-btn" onclick="lft.salvar()"><span id="lft-salvar-lbl">Registrar</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="lft-resumo" style="display:none">
+          <div class="kpi-grid" style="margin-bottom:.9rem" id="lft-resumo-kpis"></div>
+          <div class="g2" style="margin-bottom:.9rem">
+            <div class="card"><div class="card-header"><div class="card-title">Linha do Tempo (quantidade aplicada)</div></div><div class="card-body" id="lft-resumo-evolucao"></div></div>
+            <div class="card"><div class="card-header"><div class="card-title">Produtos Mais Utilizados</div></div><div class="card-body" id="lft-resumo-produtos"></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Fertirrigações Registradas</div><span id="lft-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <div class="search-bar" style="flex:1;min-width:140px"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="lft-q" oninput="lft.render()" placeholder="Buscar pivô, produto, cultura..." style="height:30px;font-size:12px"></div>
+            <select class="select" id="lft-filtro-faz" onchange="lft.render()" style="height:30px;font-size:12px;min-width:110px"><option value="">Fazenda</option></select>
+            <select class="select" id="lft-filtro-cb" onchange="lft.render()" style="height:30px;font-size:12px;min-width:130px"><option value="">Casa de Bomba</option></select>
+            <select class="select" id="lft-filtro-pivo" onchange="lft.render()" style="height:30px;font-size:12px;min-width:100px"><option value="">Pivô</option></select>
+            <button class="btn btn-ghost btn-xs" onclick="lft.clear()">✕ Limpar</button>
+          </div>
+          <div class="table-wrap" id="lft-tbl" style="max-height:420px;overflow-y:auto"></div>
+          <div id="lft-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           PAINEL: CALIBRAÇÃO DE LÂMINA
+      ══════════════════════════════════════════════════════════════ -->
+      <div id="lhm-panel-calibracao" style="display:none">
+        <div class="card" style="margin-bottom:.9rem">
+          <div class="card-header"><div class="card-title">Registrar Calibração de Lâmina</div></div>
+          <div class="card-body">
+            <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M3 21V10l9-6 9 6v11"/><path d="M9 21v-6h6v6"/></svg>Identificação</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Data <span class="req">*</span></label><input type="date" class="input" id="lc-data"></div>
+              <div class="field"><label>Hora <span class="req">*</span></label><input type="time" class="input" id="lc-hora"></div>
+              <div class="field"><label>Fazenda <span class="req">*</span></label><select class="select" id="lc-faz" onchange="lc.onFaz()"><option value="">Selecione...</option></select></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Pivô <span class="req">*</span></label><select class="select" id="lc-pivo" onchange="lc.onPivo()" disabled><option value="">Selecione a fazenda</option></select></div>
+              <div class="field"><label>Casa de Bomba</label><input type="text" class="input" id="lc-casabomba" readonly placeholder="—"></div>
+              <div class="field"><label>Lâmina Atual (cadastro)</label><input type="text" class="input" id="lc-lamina-atual" readonly placeholder="—"></div>
+            </div>
+            <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/><path d="M12 8v4l2 2"/></svg>Dados Operacionais</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Percentual Utilizado <span class="req">*</span></label><input type="number" class="input" id="lc-percentual" step="1" min="1" max="100" oninput="lc.calc()"></div>
+              <div class="field"><label>Lâmina Medida <span class="req">*</span></label><input type="number" class="input" id="lc-lamina-medida" step="0.01" min="0" oninput="lc.calc()"></div>
+              <div class="field"><label>⚙ Lâmina Calculada a 100%</label><div id="lc-calculada-display" style="display:flex;align-items:center;justify-content:center;height:36px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:color-mix(in srgb,var(--brand-500) 7%,var(--bg-surface));font-size:16px;font-weight:800;color:var(--brand-700)">—</div></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Diferença vs. Calibração Anterior</label><input type="text" class="input" id="lc-diferenca" readonly placeholder="—"></div>
+              <div class="field"><label>Variação (%)</label><input type="text" class="input" id="lc-variacao" readonly placeholder="—"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+              <div class="field"><label>Operador</label><input type="text" class="input" id="lc-oper" placeholder="Nome do operador" autocomplete="off"></div>
+              <div class="field"><label>Responsável pela Calibração</label><select class="select" id="lc-responsavel"><option value="">Não informado</option></select></div>
+              <div class="field"><label>Método de Calibração</label><select class="select" id="lc-metodo"></select></div>
+            </div>
+            <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2 2 0 0 0-4-4L4 16v4Z"/></svg>Informações Complementares</div>
+            <div class="field"><label>Observações</label><textarea class="textarea" id="lc-obs" rows="2"></textarea></div>
+            <div class="op-anexo" style="margin-top:.6rem">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Anexos (foto do coletor/teste de campo) — estrutura preparada
+              <span class="tag">Em breve</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div style="font-size:11px;color:var(--text-tertiary)" id="lc-footer-msg">Ao salvar, a lâmina a 100% do pivô (Cadastros) é atualizada automaticamente.</div>
+            <div style="display:flex;gap:.5rem">
+              <button class="btn btn-ghost" onclick="lc.limpar()">Limpar</button>
+              <button class="btn btn-primary" id="lc-salvar-btn" onclick="lc.salvar()"><span id="lc-salvar-lbl">Registrar Calibração</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="lc-resumo" style="display:none">
+          <div class="kpi-grid" style="margin-bottom:.9rem" id="lc-resumo-kpis"></div>
+          <div class="card" style="margin-bottom:.9rem">
+            <div class="card-header"><div class="card-title">Evolução da Calibração (lâmina a 100%)</div></div>
+            <div class="card-body" id="lc-resumo-evolucao"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Calibrações Registradas</div><span id="lc-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <select class="select" id="lc-filtro-faz" onchange="lc.render()" style="height:30px;font-size:12px;min-width:110px"><option value="">Fazenda</option></select>
+            <select class="select" id="lc-filtro-pivo" onchange="lc.render()" style="height:30px;font-size:12px;min-width:100px"><option value="">Pivô</option></select>
+            <button class="btn btn-ghost btn-xs" onclick="lc.clear()">✕ Limpar</button>
+          </div>
+          <div class="table-wrap" id="lc-tbl" style="max-height:420px;overflow-y:auto"></div>
+          <div id="lc-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           PAINEL: HISTÓRICO
+      ══════════════════════════════════════════════════════════════ -->
+      <div id="lhm-panel-historico" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Histórico de Lançamentos de Horímetro</div>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <span id="lhm-hist-cnt" style="font-size:10px;color:var(--text-tertiary)"></span>
+              <button class="btn btn-ghost btn-xs" onclick="lhm.exportHist()">
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
+                CSV
+              </button>
+            </div>
+          </div>
+          <!-- Filtros -->
+          <div style="display:flex;gap:.6rem;padding:.65rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <div class="search-bar" style="flex:1;min-width:140px">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" class="input" id="lhm-hist-q" placeholder="Buscar pivô, cultura, operador..."
+                oninput="lhm.renderHist()" style="height:30px;font-size:12px">
+            </div>
+            <select class="select" id="lhm-hist-faz" onchange="lhm.renderHist()"
+              style="height:30px;font-size:12px;min-width:110px">
+              <option value="">Fazenda</option><option>KARITEL</option><option>RDM</option>
+            </select>
+            <select class="select" id="lhm-hist-pv" onchange="lhm.renderHist()"
+              style="height:30px;font-size:12px;min-width:100px">
+              <option value="">Pivô</option>
+            </select>
+            <select class="select" id="lhm-hist-cb" onchange="lhm.renderHist()"
+              style="height:30px;font-size:12px;min-width:130px">
+              <option value="">Casa de Bomba</option>
+            </select>
+            <input type="month" class="input" id="lhm-hist-mes" onchange="lhm.renderHist()"
+              style="height:30px;font-size:12px">
+            <button class="btn btn-ghost btn-xs" onclick="lhm.clearHist()">✕ Limpar</button>
+          </div>
+          <!-- Resumo + gráficos (só aparece quando um pivô específico é filtrado) -->
+          <div id="lhm-hist-resumo" style="display:none">
+            <div class="kpi-grid" style="padding:.85rem 1rem 0" id="lhm-hist-kpis"></div>
+            <div class="g2" style="padding:.85rem 1rem">
+              <div class="card"><div class="card-header"><div class="card-title">Evolução do Horímetro (acumulado)</div></div><div class="card-body" id="lhm-hist-evolucao"></div></div>
+              <div class="card"><div class="card-header"><div class="card-title">Horas por Mês</div></div><div class="card-body" id="lhm-hist-mensal"></div></div>
+            </div>
+            <div class="g2" style="padding:0 1rem .85rem">
+              <div class="card"><div class="card-header"><div class="card-title">Horas por Ano</div></div><div class="card-body" id="lhm-hist-anual"></div></div>
+              <div class="card"><div class="card-header"><div class="card-title">Horas por Safra</div><span style="font-size:9.5px;color:var(--text-tertiary)">estrutura preparada</span></div><div class="card-body" id="lhm-hist-safra"></div></div>
+            </div>
+          </div>
+          <div class="table-wrap" id="lhm-hist-tbl" style="max-height:520px;overflow-y:auto"></div>
+          <div id="lhm-hist-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           PAINEL: AUDITORIA
+      ══════════════════════════════════════════════════════════════ -->
+      <div id="lhm-panel-auditoria" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Log de Auditoria — Lançamentos de Horímetro
+            </div>
+            <span style="font-size:10px;color:var(--text-tertiary)" id="lhm-aud-cnt"></span>
+          </div>
+          <!-- Info auditoria -->
+          <div style="padding:.75rem 1rem;background:color-mix(in srgb,var(--brand-500) 6%,var(--bg-surface));border-bottom:1px solid var(--border)">
+            <div style="font-size:11.5px;color:var(--text-secondary);display:flex;align-items:flex-start;gap:.5rem">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span>Estrutura preparada para integração com o módulo de <strong>Usuários e Controle de Acessos</strong>.
+              Todos os registros incluem <code style="font-size:10.5px;background:var(--bg-surface2);padding:1px 4px;border-radius:4px">usuario_id</code>,
+              <code style="font-size:10.5px;background:var(--bg-surface2);padding:1px 4px;border-radius:4px">operacao</code>
+              (INCLUSÃO / ALTERAÇÃO / EXCLUSÃO) e <code style="font-size:10.5px;background:var(--bg-surface2);padding:1px 4px;border-radius:4px">timestamp</code>
+              para rastreabilidade completa.</span>
+            </div>
+          </div>
+          <div class="table-wrap" id="lhm-aud-tbl" style="max-height:480px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+    <!-- RELAT: RELATÓRIOS -->
+  <div class="page" id="page-relat">
+    <div class="page-wrap">
+      <div class="page-header">
+        <div><div class="page-title">Gerencial e Exportações</div><div class="page-subtitle">Módulo Relatórios · gráficos gerenciais, exportação de dados consolidados e histórico</div></div>
+        <div class="page-actions"><button class="btn btn-primary" onclick="exportAllCSV()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>Exportar Tudo</button></div>
+      </div>
+
+      <div class="exec2-section-title"><span class="t">Gerenciais</span></div>
+      <div class="g2">
+        <div class="card"><div class="card-header"><div class="card-title">Horas por Pivô (Top 15)</div></div><div class="card-body" id="rel-pv"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Horas por Cultura</div></div><div class="card-body" id="rel-cult"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="card-header"><div class="card-title">Assertividade por Fazenda</div></div><div class="card-body" id="rel-faz"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Ferti por Motivo</div></div><div class="card-body" id="rel-ferti-mot"></div></div>
+      </div>
+
+      <div class="exec2-section-title"><span class="t">Favoritos</span></div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-body" style="display:flex;flex-wrap:wrap;gap:6px" id="rel-favoritos"></div>
+      </div>
+
+      <div class="exec2-section-title"><span class="t">Recentes</span></div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-body"><div class="exec2-list" id="rel-recentes"></div></div>
+      </div>
+
+      <div class="exec2-section-title"><span class="t">Exportações</span></div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-header"><div class="card-title">Exportar Módulos</div></div>
+        <div class="card-body">
+          <div class="g4" style="gap:.6rem" id="rel-export-grid">
+            <button class="btn btn-secondary" onclick="exportMod('exe')" style="flex-direction:column;height:auto;padding:.8rem;gap:.4rem"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--brand-600)" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span style="font-size:12px;font-weight:600">Executado</span><span style="font-size:10px;color:var(--text-tertiary)" id="rel-export-cnt-exe"></span></button>
+            <button class="btn btn-secondary" onclick="exportMod('ferti')" style="flex-direction:column;height:auto;padding:.8rem;gap:.4rem"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#7c3aed" stroke-width="1.8"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg><span style="font-size:12px;font-weight:600">Fertirrigação</span><span style="font-size:10px;color:var(--text-tertiary)" id="rel-export-cnt-ferti"></span></button>
+            <button class="btn btn-secondary" onclick="exportMod('itv')" style="flex-direction:column;height:auto;padding:.8rem;gap:.4rem"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#dc2626" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 3.5"/></svg><span style="font-size:12px;font-weight:600">Paradas</span><span style="font-size:10px;color:var(--text-tertiary)" id="rel-export-cnt-itv"></span></button>
+            <button class="btn btn-secondary" onclick="exportMod('hor')" style="flex-direction:column;height:auto;padding:.8rem;gap:.4rem"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0284c7" stroke-width="1.8"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg><span style="font-size:12px;font-weight:600">Horímetro</span><span style="font-size:10px;color:var(--text-tertiary)" id="rel-export-cnt-hor"></span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="exec2-section-title"><span class="t">Histórico</span></div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Exportações e Importações Recentes</div><span id="rel-historico-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+        <div class="table-wrap" id="rel-historico-tbl"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DADOS: CONSULTA OPERACIONAL (módulo Relatórios) — Sprint 01.3
+       reconstruiu esta tela como central de consulta unificada sobre os
+       lançamentos reais da equipe (js/consulta.js, objeto `dq`), em vez
+       da antiga grade de abas por tipo. A grade de abas antiga (ETL
+       histórico importado em lote, dt-exe/dt-itv/dt-hor/dt-fal/dt-ferti/
+       dt-import) continua 100% intacta — nenhum id/função/onclick mudou
+       — só foi movida para a seção recolhível "Base ETL Histórica" ao
+       final da página, já que passou a ser uma consulta secundária. -->
+  <div class="page" id="page-dados">
+    <div class="page-wrap">
+      <div class="page-header">
+        <div><div class="page-title">Consulta Operacional</div><div class="page-subtitle">Consulta consolidada dos lançamentos operacionais do COI.</div></div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-xs" onclick="dq.setPeriodo('hoje')">Hoje</button>
+          <button class="btn btn-ghost btn-xs" onclick="dq.setPeriodo('semana')">Esta semana</button>
+          <button class="btn btn-ghost btn-xs" onclick="dq.setPeriodo('mes')">Este mês</button>
+        </div>
+      </div>
+
+      <!-- 2. PAINEL DE FILTROS -->
+      <div class="card dq-filtros-card">
+        <div class="card-header">
+          <div class="card-title">Filtros</div>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-ghost btn-xs" onclick="dq.limparFiltros()">✕ Limpar filtros</button>
+            <button class="btn btn-primary btn-xs" onclick="dq.aplicarFiltros()">Aplicar filtros</button>
+          </div>
+        </div>
+        <div class="card-body dq-filtros-grid">
+          <div class="field"><label>Fazenda</label><select class="select" id="dq-faz"><option value="">Todas</option></select></div>
+          <div class="field"><label>Casa de Bomba</label><select class="select" id="dq-cb"><option value="">Todas</option></select></div>
+          <div class="field"><label>Equipamento</label><select class="select" id="dq-pivo"><option value="">Todos</option></select></div>
+          <div class="field"><label>Cultura</label><select class="select" id="dq-cultura"><option value="">Todas</option></select></div>
+          <div class="field"><label>Período (início)</label><input type="date" class="input" id="dq-d1"></div>
+          <div class="field"><label>Período (fim)</label><input type="date" class="input" id="dq-d2"></div>
+          <div class="field"><label>Tipo de Lançamento</label>
+            <select class="select" id="dq-tipo"><option value="">Todos</option><option>Horímetro</option><option>Parada</option><option>Falha</option><option>Fertirrigação</option><option>Calibração</option></select>
+          </div>
+          <div class="field"><label>Responsável</label><select class="select" id="dq-resp"><option value="">Todos</option></select></div>
+          <div class="field"><label>Status</label><select class="select" id="dq-status"><option value="">Todos</option><option>Baixa</option><option>Média</option><option>Alta</option></select></div>
+          <div class="field dq-field-search">
+            <label>Pesquisar</label>
+            <div class="search-bar"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" class="input" id="dq-q" placeholder="Pivô, fazenda, observação..." onkeydown="if(event.key==='Enter')dq.aplicarFiltros()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. RESUMO DA CONSULTA -->
+      <div class="exec2-section-title"><span class="t">Resumo da Consulta</span></div>
+      <div class="exec2-kpi-grid" id="dq-resumo"></div>
+
+      <!-- 4. RESULTADO DA CONSULTA -->
+      <div class="exec2-section-title"><span class="t">Resultado da Consulta</span></div>
+      <div class="dq-result-grid">
+        <div class="card dq-table-card">
+          <div class="card-header"><div class="card-title">Lançamentos</div><span id="dq-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+          <div class="table-wrap dq-table-wrap" id="dq-tbl"></div>
+          <div id="dq-pg" class="pag" style="display:none"></div>
+        </div>
+        <div class="card dq-detail-card">
+          <div class="card-header"><div class="card-title">Detalhe do Registro</div></div>
+          <div class="card-body" id="dq-detail-body"></div>
+        </div>
+      </div>
+
+      <!-- 5. RODAPÉ DA CONSULTA -->
+      <div class="dq-footer" id="dq-footer"></div>
+
+      <!-- BASE ETL HISTÓRICA — abas originais preservadas integralmente -->
+      <div class="exec2-section-title" onclick="dqToggleLegado()" id="dq-legado-toggle" style="margin-top:var(--ds-space-6);cursor:pointer">
+        <span class="t">Base ETL Histórica</span><span class="tag">dados importados em lote</span>
+        <svg id="dq-legado-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;transition:transform var(--ds-duration-fast) var(--ds-ease-standard)"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div id="dq-legado-body" style="display:none">
+      <div class="tabs" style="margin-bottom:1rem">
+        <button class="tab-btn active" onclick="swTab('dt-exe',this)">Executado</button>
+        <button class="tab-btn" onclick="swTab('dt-itv',this)">Paradas</button>
+        <button class="tab-btn" onclick="swTab('dt-hor',this)">Horímetro</button>
+        <button class="tab-btn" onclick="swTab('dt-fal',this)">Indicadores</button>
+        <button class="tab-btn" onclick="swTab('dt-ferti',this)">Fertirrigação</button>
+        <button class="tab-btn" onclick="swTab('dt-import',this)">Importar Planejamento</button>
+      </div>
+      <div class="tab-panel active" id="dt-exe">
+        <div class="card"><div class="card-header"><div class="card-title">Executado — Irrigação</div><span id="dte-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="dte-q" placeholder="Buscar..." oninput="rDTE()" style="height:30px;font-size:12px"></div>
+            <select class="select" id="dte-mt" onchange="rDTE()" style="height:30px;font-size:12px;min-width:100px"><option value="">Status</option><option>feito</option><option>oper</option><option>mec</option><option>ele</option></select>
+            <input type="month" class="input" id="dte-ms" onchange="rDTE()" style="height:30px;font-size:12px">
+            <button class="btn btn-ghost btn-xs" onclick="exportMod('exe')">↓ CSV</button>
+          </div>
+          <div class="table-wrap" id="dte-tbl" style="max-height:420px;overflow-y:auto"></div>
+          <div id="dte-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+      <div class="tab-panel" id="dt-itv">
+        <div class="card"><div class="card-header"><div class="card-title">Intervalo de Paradas</div><span id="dti-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="dti-q" placeholder="Buscar causa..." oninput="rDTI()" style="height:30px;font-size:12px"></div>
+            <select class="select" id="dti-tp" onchange="rDTI()" style="height:30px;font-size:12px;min-width:110px"><option value="">Tipo</option><option>Operacional</option><option>Mecânico</option><option>Elétrico</option></select>
+            <input type="month" class="input" id="dti-ms" onchange="rDTI()" style="height:30px;font-size:12px">
+            <button class="btn btn-ghost btn-xs" onclick="exportMod('itv')">↓ CSV</button>
+          </div>
+          <div class="table-wrap" id="dti-tbl" style="max-height:420px;overflow-y:auto"></div>
+          <div id="dti-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+      <div class="tab-panel" id="dt-hor">
+        <div class="card"><div class="card-header"><div class="card-title">Fato_Horimetro</div><span id="dth-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="dth-q" placeholder="Buscar pivô, cultura..." oninput="rDTH()" style="height:30px;font-size:12px"></div>
+            <select class="select" id="dth-faz" onchange="rDTH()" style="height:30px;font-size:12px;min-width:110px"><option value="">Fazenda</option><option>KARITEL</option><option>RDM</option></select>
+            <input type="month" class="input" id="dth-ms" onchange="rDTH()" style="height:30px;font-size:12px">
+            <button class="btn btn-ghost btn-xs" onclick="exportMod('hor')">↓ CSV</button>
+          </div>
+          <div class="table-wrap" id="dth-tbl" style="max-height:420px;overflow-y:auto"></div>
+          <div id="dth-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+      <div class="tab-panel" id="dt-fal">
+        <div class="card"><div class="card-header"><div class="card-title">Indicadores / Falhas</div><span id="dtf-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="dtf-q" placeholder="Buscar..." oninput="rDTF()" style="height:30px;font-size:12px"></div>
+            <select class="select" id="dtf-tp" onchange="rDTF()" style="height:30px;font-size:12px;min-width:120px"><option value="">Categoria</option><option>Mecânico</option><option>Elétrico</option><option>Operacional</option></select>
+            <button class="btn btn-ghost btn-xs" onclick="exportMod('fal')">↓ CSV</button>
+          </div>
+          <div class="table-wrap" id="dtf-tbl" style="max-height:420px;overflow-y:auto"></div>
+        </div>
+      </div>
+      <div class="tab-panel" id="dt-ferti">
+        <div class="card"><div class="card-header"><div class="card-title">Fertirrigação</div><span id="dtfe-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+            <div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="dtfe-q" placeholder="Buscar..." oninput="rDTFe()" style="height:30px;font-size:12px"></div>
+            <select class="select" id="dtfe-mt" onchange="rDTFe()" style="height:30px;font-size:12px;min-width:120px"><option value="">Motivo</option><option>Realizado</option><option>Operacional</option><option>Mecânico</option><option>Elétrico</option><option>Logística</option><option>Cancelado</option></select>
+            <input type="month" class="input" id="dtfe-ms" onchange="rDTFe()" style="height:30px;font-size:12px">
+            <button class="btn btn-ghost btn-xs" onclick="exportMod('ferti')">↓ CSV</button>
+          </div>
+          <div class="table-wrap" id="dtfe-tbl" style="max-height:420px;overflow-y:auto"></div>
+          <div id="dtfe-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="dt-import">
+        <div class="card" style="margin-bottom:.9rem">
+          <div class="card-header"><div class="card-title">Importar Planejamento</div></div>
+          <div class="card-body">
+            <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem">
+              <input type="file" id="imp-arquivo" accept=".xlsx,.xls,.csv" onchange="imp.arquivoSelecionado(this)">
+              <button class="btn btn-ghost btn-xs" onclick="imp.limpar()">✕ Limpar</button>
+            </div>
+            <div style="font-size:11.5px;color:var(--text-secondary);line-height:1.6">
+              Colunas obrigatórias: <strong>data, pivo, percentual, cultura, area</strong>. Opcionais: <span id="imp-colunas-opcionais"></span>.
+              Formatos aceitos: .xlsx, .xls, .csv — arquitetura pronta para novos formatos no futuro.
+            </div>
+          </div>
+        </div>
+
+        <div id="imp-resultado" style="display:none">
+          <div class="kpi-grid" style="margin-bottom:.9rem" id="imp-kpis"></div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Pré-visualização</div>
+              <button class="btn btn-primary btn-xs" id="imp-importar-btn" onclick="imp.importar()">Importar Linhas Válidas</button>
+            </div>
+            <div class="table-wrap" id="imp-tbl" style="max-height:480px;overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+      </div><!-- /dq-legado-body -->
+    </div>
+  </div>
+
+  <!-- CAD: CADASTROS -->
+  <div class="page" id="page-cad">
+    <div class="page-wrap">
+      <div class="page-header"><div><div class="page-title">Cadastros</div><div class="page-subtitle">Pivôs, casas de bomba, bombas, motores, painéis, sensores, operadores, técnicos, fazendas, setores e culturas</div></div></div>
+      <div class="tabs" style="margin-bottom:1rem;flex-wrap:wrap">
+        <button class="tab-btn active" onclick="swTab('cad-pivos',this)">Pivôs</button>
+        <button class="tab-btn" onclick="swTab('cad-fazendas',this)">Fazendas</button>
+        <button class="tab-btn" onclick="swTab('cad-setores',this)">Setores</button>
+        <button class="tab-btn" onclick="swTab('cad-casasBomba',this)">Casas de Bomba</button>
+        <button class="tab-btn" onclick="swTab('cad-bombas',this)">Bombas</button>
+        <button class="tab-btn" onclick="swTab('cad-motores',this)">Motores</button>
+        <button class="tab-btn" onclick="swTab('cad-paineis',this)">Painéis</button>
+        <button class="tab-btn" onclick="swTab('cad-sensores',this)">Sensores</button>
+        <button class="tab-btn" onclick="swTab('cad-culturas',this)">Culturas</button>
+        <button class="tab-btn" onclick="swTab('cad-operadores',this)">Operadores</button>
+        <button class="tab-btn" onclick="swTab('cad-tecnicos',this)">Técnicos</button>
+        <button class="tab-btn" onclick="swTab('cad-falhas',this)">Falhas</button>
+        <button class="tab-btn" onclick="swTab('cad-produtos',this)">Produtos</button>
+        <button class="tab-btn" onclick="swTab('cad-categoriasProduto',this)">Categorias de Produto</button>
+        <button class="tab-btn" onclick="swTab('cad-unidadesMedida',this)">Unidades de Medida</button>
+      </div>
+
+      <div class="tab-panel active" id="cad-pivos">
+        <div class="card"><div class="card-header"><div class="card-title">Pivôs</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-pivos-cnt"></span><button class="btn btn-primary btn-xs" id="cad-pivos-novo" onclick="cadOpenForm('pivos')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-pivos-q" placeholder="Buscar..." oninput="cadRenderList('pivos')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-pivos-tbl"></div>
+          <div id="cad-pivos-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-fazendas">
+        <div class="card"><div class="card-header"><div class="card-title">Fazendas</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-fazendas-cnt"></span><button class="btn btn-primary btn-xs" id="cad-fazendas-novo" onclick="cadOpenForm('fazendas')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-fazendas-q" placeholder="Buscar..." oninput="cadRenderList('fazendas')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-fazendas-tbl"></div>
+          <div id="cad-fazendas-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-setores">
+        <div class="card"><div class="card-header"><div class="card-title">Setores</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-setores-cnt"></span><button class="btn btn-primary btn-xs" id="cad-setores-novo" onclick="cadOpenForm('setores')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-setores-q" placeholder="Buscar..." oninput="cadRenderList('setores')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-setores-tbl"></div>
+          <div id="cad-setores-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-casasBomba">
+        <div class="card"><div class="card-header"><div class="card-title">Casas de Bomba</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-casasBomba-cnt"></span><button class="btn btn-primary btn-xs" id="cad-casasBomba-novo" onclick="cadOpenForm('casasBomba')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-casasBomba-q" placeholder="Buscar..." oninput="cadRenderList('casasBomba')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-casasBomba-tbl"></div>
+          <div id="cad-casasBomba-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-bombas">
+        <div class="card"><div class="card-header"><div class="card-title">Bombas</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-bombas-cnt"></span><button class="btn btn-primary btn-xs" id="cad-bombas-novo" onclick="cadOpenForm('bombas')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-bombas-q" placeholder="Buscar..." oninput="cadRenderList('bombas')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-bombas-tbl"></div>
+          <div id="cad-bombas-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-motores">
+        <div class="card"><div class="card-header"><div class="card-title">Motores</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-motores-cnt"></span><button class="btn btn-primary btn-xs" id="cad-motores-novo" onclick="cadOpenForm('motores')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-motores-q" placeholder="Buscar..." oninput="cadRenderList('motores')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-motores-tbl"></div>
+          <div id="cad-motores-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-paineis">
+        <div class="card"><div class="card-header"><div class="card-title">Painéis</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-paineis-cnt"></span><button class="btn btn-primary btn-xs" id="cad-paineis-novo" onclick="cadOpenForm('paineis')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-paineis-q" placeholder="Buscar..." oninput="cadRenderList('paineis')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-paineis-tbl"></div>
+          <div id="cad-paineis-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-sensores">
+        <div class="card"><div class="card-header"><div class="card-title">Sensores</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-sensores-cnt"></span><button class="btn btn-primary btn-xs" id="cad-sensores-novo" onclick="cadOpenForm('sensores')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-sensores-q" placeholder="Buscar..." oninput="cadRenderList('sensores')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-sensores-tbl"></div>
+          <div id="cad-sensores-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-culturas">
+        <div class="card"><div class="card-header"><div class="card-title">Culturas</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-culturas-cnt"></span><button class="btn btn-primary btn-xs" id="cad-culturas-novo" onclick="cadOpenForm('culturas')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-culturas-q" placeholder="Buscar..." oninput="cadRenderList('culturas')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-culturas-tbl"></div>
+          <div id="cad-culturas-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-operadores">
+        <div class="card"><div class="card-header"><div class="card-title">Operadores</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-operadores-cnt"></span><button class="btn btn-primary btn-xs" id="cad-operadores-novo" onclick="cadOpenForm('operadores')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-operadores-q" placeholder="Buscar..." oninput="cadRenderList('operadores')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-operadores-tbl"></div>
+          <div id="cad-operadores-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-tecnicos">
+        <div class="card"><div class="card-header"><div class="card-title">Técnicos</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-tecnicos-cnt"></span><button class="btn btn-primary btn-xs" id="cad-tecnicos-novo" onclick="cadOpenForm('tecnicos')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-tecnicos-q" placeholder="Buscar..." oninput="cadRenderList('tecnicos')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-tecnicos-tbl"></div>
+          <div id="cad-tecnicos-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-falhas">
+        <div class="card"><div class="card-header"><div class="card-title">Falhas (categoria / motivo / submotivo)</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-falhas-cnt"></span><button class="btn btn-primary btn-xs" id="cad-falhas-novo" onclick="cadOpenForm('falhas')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-falhas-q" placeholder="Buscar..." oninput="cadRenderList('falhas')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-falhas-tbl"></div>
+          <div id="cad-falhas-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-produtos">
+        <div class="card"><div class="card-header"><div class="card-title">Produtos</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-produtos-cnt"></span><button class="btn btn-primary btn-xs" id="cad-produtos-novo" onclick="cadOpenForm('produtos')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-produtos-q" placeholder="Buscar..." oninput="cadRenderList('produtos')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-produtos-tbl"></div>
+          <div id="cad-produtos-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-categoriasProduto">
+        <div class="card"><div class="card-header"><div class="card-title">Categorias de Produto</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-categoriasProduto-cnt"></span><button class="btn btn-primary btn-xs" id="cad-categoriasProduto-novo" onclick="cadOpenForm('categoriasProduto')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-categoriasProduto-q" placeholder="Buscar..." oninput="cadRenderList('categoriasProduto')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-categoriasProduto-tbl"></div>
+          <div id="cad-categoriasProduto-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-unidadesMedida">
+        <div class="card"><div class="card-header"><div class="card-title">Unidades de Medida</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-unidadesMedida-cnt"></span><button class="btn btn-primary btn-xs" id="cad-unidadesMedida-novo" onclick="cadOpenForm('unidadesMedida')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-unidadesMedida-q" placeholder="Buscar..." oninput="cadRenderList('unidadesMedida')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-unidadesMedida-tbl"></div>
+          <div id="cad-unidadesMedida-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN: ADMINISTRAÇÃO (Fase 10.0 — estrutura preparada para Firebase,
+       sem funcionamento ainda; ver ROADMAP.md v4.0) -->
+  <div class="page" id="page-admin">
+    <div class="page-wrap">
+      <div class="page-header">
+        <div><div class="page-title">Administração</div><div class="page-subtitle">Usuários já funciona localmente; o restante é estrutura preparada para Firebase Authentication e Firestore Rules</div></div>
+      </div>
+      <div class="alert alert-danger" id="admin-bloqueado" style="display:none;margin-bottom:1rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div><div class="alert-title">Acesso restrito</div>Esta área é exclusiva do perfil Administrador. Usuário sem permissão para executar esta ação.</div>
+      </div>
+
+      <div id="admin-conteudo">
+        <div class="alert alert-info" style="margin-bottom:1rem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div><div class="alert-title">Aguardando integração com Firebase</div>Usuários e Configurações já funcionam hoje (armazenamento local). Perfis/Permissões/Backup/Sincronização/Integrações documentam onde a peça do Firebase vai entrar — nenhum bloqueia módulo nenhum ainda.</div>
+        </div>
+
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header">
+            <div class="card-title">Usuários</div>
+            <span id="admin-usuarios-cnt" style="font-size:10px;color:var(--text-tertiary)"></span>
+          </div>
+          <div class="table-wrap" id="admin-usuarios-tbl"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:1rem" id="admin-auditoria-card">
+          <div class="card-header">
+            <div class="card-title">Auditoria</div>
+            <span id="admin-auditoria-cnt" style="font-size:10px;color:var(--text-tertiary)"></span>
+          </div>
+          <div class="card-body" style="padding-bottom:0">
+            <div class="filter-bar">
+              <div class="filter-field"><div class="filter-label">Usuário</div><select class="select" id="admin-aud-usuario" onchange="adminAuditoriaFiltrar()" style="height:32px;font-size:12px"></select></div>
+              <div class="filter-field"><div class="filter-label">Módulo</div><select class="select" id="admin-aud-modulo" onchange="adminAuditoriaFiltrar()" style="height:32px;font-size:12px"></select></div>
+              <div class="filter-field"><div class="filter-label">De</div><input type="date" class="input" id="admin-aud-inicio" onchange="adminAuditoriaFiltrar()" style="height:32px;font-size:12px"></div>
+              <div class="filter-field"><div class="filter-label">Até</div><input type="date" class="input" id="admin-aud-fim" onchange="adminAuditoriaFiltrar()" style="height:32px;font-size:12px"></div>
+              <div class="filter-field" style="flex:1;min-width:160px"><div class="filter-label">Buscar</div><input type="text" class="input" id="admin-aud-busca" placeholder="usuário, registro, descrição..." oninput="adminAuditoriaFiltrar()" style="height:32px;font-size:12px;width:100%"></div>
+              <div class="filter-field"><div class="filter-label">&nbsp;</div><button class="btn btn-ghost btn-xs" onclick="adminAuditoriaLimpar()">✕ Limpar</button></div>
+            </div>
+          </div>
+          <div class="table-wrap" id="admin-auditoria-tbl"></div>
+        </div>
+
+        <div class="exec2-section-title"><span class="t">Estrutura Preparada</span></div>
+        <div class="home-card-grid" id="admin-cards"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CFG: CONFIGURAÇÕES -->
+  <div class="page" id="page-cfg">
+    <div class="page-wrap">
+      <div class="page-header"><div><div class="page-title">Configurações</div><div class="page-subtitle">Preferências do sistema COI</div></div></div>
+      <div class="g2" style="align-items:start">
+        <div>
+          <div class="card" style="margin-bottom:.8rem"><div class="card-header"><div class="card-title">Aparência</div></div>
+            <div class="card-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border)">
+                <div><div style="font-size:13px;font-weight:600">Tema</div><div style="font-size:11px;color:var(--text-tertiary)">Claro ou escuro</div></div>
+                <button class="btn btn-secondary btn-xs" onclick="toggleTheme()" id="cfg-theme-btn">Claro</button>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border)">
+                <div><div style="font-size:13px;font-weight:600">Densidade</div><div style="font-size:11px;color:var(--text-tertiary)">Espaçamento das telas</div></div>
+                <button class="btn btn-secondary btn-xs" onclick="cycleDensidade()" id="cfg-densidade-btn">Padrão</button>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0">
+                <div><div style="font-size:13px;font-weight:600">Menu lateral</div><div style="font-size:11px;color:var(--text-tertiary)">Recolhido ou expandido</div></div>
+                <button class="btn btn-secondary btn-xs" onclick="toggleSB()">Alternar</button>
+              </div>
+            </div>
+          </div>
+          <div class="card"><div class="card-header"><div class="card-title">Dados</div></div>
+            <div class="card-body">
+              <div style="font-size:12px;color:var(--text-secondary);margin-bottom:.75rem;line-height:1.6">
+                Base consolidada com dados de todas as fontes ETL. Novos lançamentos são armazenados localmente.
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+                <button class="btn btn-ghost btn-xs" onclick="exportAllCSV()">Exportar todos</button>
+                <button class="btn btn-danger btn-xs" onclick="confirmClear()">Limpar lançamentos locais</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card"><div class="card-header"><div class="card-title">Status do Sistema</div></div>
+          <div class="card-body" id="cfg-status"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div>COI · Centro de Operações de Irrigação · Santa Colomba Agropecuária</div>
+    <div class="footer-right">
+      <span id="ft-stats" style="font-size:10.5px;color:var(--text-tertiary)"></span>
+      <span>Base ETL Consolidada</span>
+    </div>
+  </footer>
+
+</main>
+</div><!-- .app -->
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- MODAL ÚNICO DE CADASTRO (reutilizado pelos 11 cadastros) -->
+<div class="modal-overlay" id="cad-modal-overlay">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title" id="cad-modal-title">Novo registro</div>
+      <button class="modal-close" onclick="cadCloseForm()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="cad-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cadCloseForm()">Cancelar</button>
+      <button class="btn btn-primary" onclick="cadSubmitForm()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ÚNICO DE HISTÓRICO DE VERSÕES (reutilizado por Horímetro/Falha/
+     Parada/Fertirrigação/Calibração — substitui o alert() de texto puro) -->
+<div class="modal-overlay" id="versoes-modal-overlay">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title" id="versoes-modal-title">Histórico de Versões</div>
+      <button class="modal-close" onclick="closeVersoesModal()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="versoes-modal-body" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeVersoesModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ETAPA 5: scripts JS modulares entram aqui (ordem de dependencia) -->
+<script src="js/format.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/audit.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/filters.js"></script>
+<script src="js/services/calculos.js"></script>
+<script src="js/services/validacoes.js"></script>
+<script src="js/cadastro.js"></script>
+<script src="js/services/horimetro.js"></script>
+<script src="js/services/indicador.js"></script>
+<script src="js/services/parada.js"></script>
+<script src="js/services/fertirrigacao.js"></script>
+<script src="js/services/planejamento.js"></script>
+<script src="js/services/calibracao.js"></script>
+<script src="js/services/usuarios.js"></script>
+<script src="js/services/permissoes.js"></script>
+<script src="js/services/database.js"></script>
+<script src="js/services/auditoria.js"></script>
+<!-- SheetJS: única dependência externa do projeto, só para ler .xlsx/.xls
+     (formato binário — não é viável de parsear em JS puro). Nenhum outro
+     módulo usa bibliotecas externas. -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="js/services/importacao.js"></script>
+<script src="js/render.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/lanc.js"></script>
+<script src="js/consulta.js"></script>
+<script src="js/importacao-ui.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/export.js"></script>
+<script src="js/data-loader.js"></script><script src="js/data-loader.js"></script>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config/supabase.js"></script>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
+<script src="js/config/firebase.js"></script>
+
+<script src="js/main.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>

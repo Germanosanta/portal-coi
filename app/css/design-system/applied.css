@@ -1,0 +1,243 @@
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — APLICADO · Fase 9.2
+   Requer tokens.css carregado antes. Aplica a identidade da Fase 9.1
+   em três áreas apenas:
+     1) Sidebar (#sb-wrap)  — chrome global, único no DOM
+     2) Topbar (.topbar)    — chrome global, único no DOM
+     3) Dashboard Executivo (#page-exec) — todo o CSS novo aqui é
+        prefixado `.exec2-*` e/ou escopado sob #page-exec, para não
+        vazar para nenhuma outra tela (que continua 100% em
+        css/styles.css, inalterado).
+   Nenhum seletor aqui reescreve `.card`, `.kpi`, `.btn` etc. globais.
+═══════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────
+   IDENTIDADE — marca d'água de pivô central no cabeçalho executivo,
+   usada com moderação (opacidade baixa, decorativa, não compete com
+   o conteúdo real do card).
+───────────────────────────────────────────────────────────────── */
+.icon-pivot{stroke:currentColor;fill:none;stroke-width:1.75}
+.hero-watermark{position:absolute;right:-28px;top:-28px;width:190px;height:190px;opacity:.1;color:#fff;pointer-events:none}
+
+/* ═════════════════════ SIDEBAR ═══════════════════════════════════ */
+#sb-wrap{--sb-w:264px} /* +16px — as duas linhas (título/descrição) por item pediam mais fôlego */
+#sb-wrap .sidebar{
+  background:linear-gradient(180deg,var(--ds-nav-bg) 0%,var(--ds-nav-bg-2) 100%);
+}
+#sb-wrap .sb-header{border-bottom:1px solid rgba(255,255,255,.07)}
+#sb-wrap .sb-logo-name{letter-spacing:.01em}
+#sb-wrap .sb-logo-sub{color:rgba(255,255,255,.34)}
+
+/* Busca no menu */
+.sb-search{padding:.5rem .7rem .35rem;flex-shrink:0}
+.sb-search .search-bar{position:relative;display:flex;align-items:center}
+.sb-search svg{position:absolute;left:9px;width:13px;height:13px;stroke:rgba(255,255,255,.35);fill:none;stroke-width:2;pointer-events:none}
+.sb-search input{width:100%;height:30px;padding:0 8px 0 28px;border-radius:var(--ds-radius-md);
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;font-size:11.5px;font-family:inherit}
+.sb-search input::placeholder{color:rgba(255,255,255,.32)}
+.sb-search input:focus{outline:none;border-color:var(--ds-green-400);background:rgba(255,255,255,.08)}
+.collapsed .sb-search{display:none}
+
+/* Grupos e itens */
+#sb-wrap .nav-section-label{color:rgba(255,255,255,.26);font-size:9.5px}
+/* Separador elegante entre grupos — gradiente em vez de linha reta */
+#sb-wrap .nav-sep{margin:.65rem .9rem;height:1px;
+  background:linear-gradient(90deg,rgba(255,255,255,.16),rgba(255,255,255,0) 85%)}
+.nav-item-desc{display:block;font-size:9.5px;font-weight:400;color:rgba(255,255,255,.32);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px;transition:opacity var(--ds-duration-fast) var(--ds-ease-standard)}
+#sb-wrap .nav-item{align-items:flex-start;padding-top:.46rem;padding-bottom:.46rem;border-radius:0 var(--ds-radius-md) var(--ds-radius-md) 0;margin-right:6px}
+#sb-wrap .nav-item .nav-item-icon{margin-top:1px}
+#sb-wrap .nav-item:focus-visible{outline:none;box-shadow:inset var(--ds-focus-ring)}
+.collapsed .nav-item-desc{display:none}
+#sb-wrap .nav-item.active{position:relative;border-right-color:transparent}
+#sb-wrap .nav-item.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;
+  border-radius:0 3px 3px 0;background:var(--ds-nav-active-border)}
+
+/* Grupo de favoritos — identidade própria (dourado, sutil) */
+.nav-fav-group{background:rgba(242,199,68,.05);border-radius:var(--ds-radius-md);margin:0 6px 4px;padding-bottom:2px}
+.nav-fav-group .nav-section-label{color:#e0b53d}
+.collapsed .nav-fav-group{background:none;margin:0}
+
+/* Estrela de favorito */
+.nav-fav-btn{margin-left:auto;flex-shrink:0;width:20px;height:20px;border:none;background:none;cursor:pointer;
+  color:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;border-radius:5px;
+  transition:all var(--ds-duration-fast) var(--ds-ease-standard);opacity:0}
+.nav-item:hover .nav-fav-btn,.nav-fav-btn.is-fav{opacity:1}
+.nav-fav-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-fav-btn:focus-visible{outline:none;opacity:1;box-shadow:0 0 0 2px rgba(255,255,255,.3)}
+.nav-fav-btn.is-fav{color:#f2c744}
+.nav-fav-btn svg{width:12px;height:12px}
+.collapsed .nav-fav-btn{display:none}
+.sb-empty-search{padding:.6rem .9rem;font-size:11px;color:rgba(255,255,255,.32);text-align:center}
+.collapsed .sb-empty-search{display:none}
+
+/* ═════════════════════ TOPBAR ════════════════════════════════════ */
+.topbar{background:var(--ds-bg-surface);border-bottom:1px solid var(--ds-border)}
+
+/* Pesquisa global — mais destaque ao focar */
+.tb-search .search-bar{border-radius:var(--ds-radius-md);transition:box-shadow var(--ds-duration-fast) var(--ds-ease-standard)}
+.tb-search .search-bar:focus-within{box-shadow:var(--ds-focus-ring)}
+
+/* Fazenda ativa — envelope com ícone, mais legível que um <select> nu */
+.tb-farm-wrap{display:flex;align-items:center;gap:6px;height:30px;padding:0 9px 0 8px;border-radius:var(--ds-radius-md);
+  border:1.5px solid var(--ds-border-strong);background:var(--ds-bg-surface-2);transition:border-color var(--ds-duration-fast) var(--ds-ease-standard)}
+.tb-farm-wrap:focus-within{border-color:var(--ds-brand);box-shadow:var(--ds-focus-ring)}
+.tb-farm-wrap svg{width:13px;height:13px;stroke:var(--ds-text-tertiary);fill:none;stroke-width:2;flex-shrink:0}
+.tb-farm-select{height:100%;border:none;background:none;color:var(--ds-text-primary);font-size:11.5px;font-family:inherit;
+  padding:0;max-width:130px}
+.tb-farm-select:focus{outline:none}
+
+.tb-user{position:relative;transition:background var(--ds-duration-fast) var(--ds-ease-standard)}
+.tb-user:hover{background:var(--ds-bg-surface-3)}
+.tb-user-meta{display:flex;flex-direction:column;line-height:1.15}
+.tb-user-role{font-size:9.5px;color:var(--ds-text-tertiary);font-weight:600}
+
+/* Estados de foco padronizados nas ações do topbar */
+.tb-action:focus-visible,.tb-user:focus-visible{outline:none;box-shadow:var(--ds-focus-ring)}
+
+/* Menus suspensos — transição consistente (abre com um leve deslize + fade) */
+.notif-panel,.tb-user-menu{display:block;opacity:0;transform:translateY(-6px);pointer-events:none;
+  transition:opacity var(--ds-duration-fast) var(--ds-ease-standard),transform var(--ds-duration-fast) var(--ds-ease-standard)}
+.notif-panel.show,.tb-user-menu.show{opacity:1;transform:none;pointer-events:auto}
+.tb-user-menu .menu-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--ds-radius-sm);
+  font-size:12px;color:var(--ds-text-primary);cursor:pointer;transition:background var(--ds-duration-fast) var(--ds-ease-standard)}
+.tb-user-menu .menu-item:hover{background:var(--ds-bg-surface-2)}
+.tb-user-menu .menu-item.danger{color:var(--ds-danger)}
+.tb-user-menu .menu-item.danger:hover{background:var(--ds-danger-l)}
+.tb-user-menu .menu-item svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.9}
+.tb-user-menu .menu-sep{height:1px;background:var(--ds-border);margin:4px 0}
+.tb-user-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:190px;background:var(--ds-bg-surface);
+  border:1px solid var(--ds-border);border-radius:var(--ds-radius-lg);box-shadow:var(--ds-shadow-lg);padding:var(--ds-space-1);z-index:260}
+
+/* ═════════════════════ DASHBOARD EXECUTIVO — #page-exec ══════════ */
+/* Gap maior que o padrão (--ds-space-6 em vez de -5): mais "respiro"
+   entre os 6 blocos, pedido explícito da revisão visual. Continua
+   reagindo à densidade, porque --ds-space-6 também é um token. */
+#page-exec .page-wrap{gap:var(--ds-space-6);display:flex;flex-direction:column}
+
+/* Bloco 1 — Cabeçalho Executivo — duotone verde+azul (institucional +
+   tecnológico), em vez do verde puro da primeira versão */
+.exec2-hero{border-radius:var(--ds-radius-xl);padding:var(--ds-space-5) var(--ds-space-6);color:#fff;
+  background:radial-gradient(circle at 100% 0%,var(--ds-blue-700) 0%,var(--ds-green-800) 48%,var(--ds-nav-bg) 100%);
+  display:flex;align-items:center;justify-content:space-between;gap:var(--ds-space-5);flex-wrap:wrap;position:relative;overflow:hidden}
+.exec2-hero-greet{font-size:var(--ds-text-title-size);font-weight:700;letter-spacing:var(--ds-text-title-tracking)}
+.exec2-hero-sub{font-size:12.5px;color:rgba(255,255,255,.65);margin-top:2px}
+
+/* Rótulos de seção */
+.exec2-section-title{display:flex;align-items:center;gap:10px;margin:0}
+.exec2-section-title .t{font-size:13px;font-weight:700;color:var(--ds-text-primary)}
+.exec2-section-title::after{content:'';flex:1;height:1px;background:var(--ds-border)}
+.exec2-section-title .tag{font-size:9.5px;font-weight:700;color:var(--ds-text-tertiary);
+  background:var(--ds-bg-surface-2);border:1px solid var(--ds-border);border-radius:var(--ds-radius-pill);padding:2px 8px}
+
+/* Bloco 2 — KPIs principais — protagonistas: ícone, valor, tendência e
+   uma barra de "estado visual" à esquerda (verde/azul/âmbar/vermelho). */
+.exec2-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:var(--ds-space-4)}
+.exec2-kpi{background:var(--ds-bg-surface);border:1px solid var(--ds-border);border-radius:var(--ds-radius-lg);
+  padding:var(--ds-space-4) var(--ds-space-4) var(--ds-space-4) calc(var(--ds-space-4) + 4px);
+  position:relative;overflow:hidden;box-shadow:var(--ds-shadow-xs);min-height:128px;
+  display:flex;flex-direction:column;justify-content:center;
+  transition:transform var(--ds-duration-base) var(--ds-ease-standard),box-shadow var(--ds-duration-base) var(--ds-ease-standard);
+  animation:exec2In .35s var(--ds-ease-decelerate) both}
+.exec2-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ds-accent)}
+.exec2-kpi.c-green::before{background:var(--ds-success)}
+.exec2-kpi.c-amber::before{background:var(--ds-warning)}
+.exec2-kpi.c-red::before{background:var(--ds-danger)}
+.exec2-kpi:hover{transform:translateY(-2px);box-shadow:var(--ds-shadow-md)}
+.exec2-kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.exec2-kpi-icon{width:32px;height:32px;border-radius:var(--ds-radius-md);display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--ds-accent) 12%,transparent);color:var(--ds-accent)}
+.exec2-kpi-icon svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9}
+.exec2-kpi.c-green .exec2-kpi-icon{background:color-mix(in srgb,var(--ds-success) 14%,transparent);color:var(--ds-success-d)}
+.exec2-kpi.c-amber .exec2-kpi-icon{background:color-mix(in srgb,var(--ds-warning) 16%,transparent);color:var(--ds-warning-d)}
+.exec2-kpi.c-red .exec2-kpi-icon{background:color-mix(in srgb,var(--ds-danger) 14%,transparent);color:var(--ds-danger)}
+.exec2-trend{display:flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:var(--ds-radius-pill)}
+.exec2-trend.up{background:var(--ds-info-l);color:var(--ds-info-d)}
+.exec2-trend.down{background:var(--ds-bg-surface-3);color:var(--ds-text-secondary)}
+.exec2-trend.flat{background:var(--ds-bg-surface-2);color:var(--ds-text-tertiary)}
+.exec2-trend svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:3}
+.exec2-kpi-label{font-size:10.5px;font-weight:700;color:var(--ds-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.exec2-kpi-value{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--ds-text-primary);line-height:1}
+.exec2-kpi-unit{font-size:12px;font-weight:600;color:var(--ds-text-tertiary);margin-left:3px}
+.exec2-kpi-sub{font-size:11px;color:var(--ds-text-tertiary);margin-top:6px;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+
+/* Blocos 3/5 — grids de cards. auto-fit + minmax: um card a mais (ou a
+   menos) só muda quantas colunas cabem, nunca exige editar o CSS. */
+.exec2-grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:var(--ds-space-4)}
+.exec2-card{background:var(--ds-bg-surface);border:1px solid var(--ds-border);border-radius:var(--ds-radius-lg);
+  box-shadow:var(--ds-shadow-xs);overflow:hidden;display:flex;flex-direction:column;
+  transition:box-shadow var(--ds-duration-base) var(--ds-ease-standard);animation:exec2In .35s var(--ds-ease-decelerate) both}
+.exec2-card:hover{box-shadow:var(--ds-shadow-sm)}
+.exec2-card-head{padding:var(--ds-space-3) var(--ds-space-4);border-bottom:1px solid var(--ds-border);
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.exec2-card-head .t{font-size:12.5px;font-weight:700;color:var(--ds-text-primary);display:flex;align-items:center;gap:7px}
+.exec2-card-head .t svg{width:14px;height:14px;stroke:var(--ds-text-secondary);fill:none;stroke-width:2}
+.exec2-card-body{padding:var(--ds-space-4);flex:1}
+.exec2-stat-row{display:flex;align-items:baseline;justify-content:space-between;padding:var(--ds-space-2) 0;border-bottom:1px solid var(--ds-border)}
+.exec2-stat-row:last-child{border-bottom:none}
+.exec2-stat-big{font-size:22px;font-weight:800;color:var(--ds-text-primary);letter-spacing:-.02em}
+
+@keyframes exec2In{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Lista compacta (últimos lançamentos, auditoria, pendências) */
+.exec2-list{display:flex;flex-direction:column;gap:0}
+.exec2-list-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--ds-border)}
+.exec2-list-row:last-child{border-bottom:none}
+.exec2-list-icon{width:26px;height:26px;border-radius:var(--ds-radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.exec2-list-icon svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+.exec2-list-main{flex:1;min-width:0}
+.exec2-list-title{font-size:12px;font-weight:600;color:var(--ds-text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exec2-list-sub{font-size:10.5px;color:var(--ds-text-tertiary);margin-top:1px}
+.exec2-list-time{font-size:10px;color:var(--ds-text-tertiary);flex-shrink:0;white-space:nowrap}
+.exec2-empty{padding:1rem 0;text-align:center;font-size:11.5px;color:var(--ds-text-tertiary)}
+
+/* Cores semânticas reutilizáveis nos ícones de status/listas */
+.i-ok{background:color-mix(in srgb,var(--ds-success) 14%,transparent);color:var(--ds-success-d)}
+.i-info{background:color-mix(in srgb,var(--ds-info) 14%,transparent);color:var(--ds-info-d)}
+.i-warn{background:color-mix(in srgb,var(--ds-warning) 16%,transparent);color:var(--ds-warning-d)}
+.i-danger{background:color-mix(in srgb,var(--ds-danger) 14%,transparent);color:var(--ds-danger-d)}
+.i-neutral{background:var(--ds-bg-surface-3);color:var(--ds-text-tertiary)}
+
+/* Bloco 4 — Indicadores técnicos — reaproveita .card/kpi()/gauge() como
+   já existiam (mesma decisão da Fase 9.2): só o grid é novo/flexível. */
+.exec2-ind-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:var(--ds-space-4)}
+.exec2-ind-grid .card{margin:0}
+
+/* Bloco 6 — reservado para evolução futura (fica display:none até haver dado) */
+.exec2-future{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:var(--ds-space-4)}
+.exec2-future-slot{border:1.5px dashed var(--ds-border-strong);border-radius:var(--ds-radius-lg);
+  padding:var(--ds-space-4);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  color:var(--ds-text-tertiary);min-height:110px;text-align:center}
+.exec2-future-slot svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.5;opacity:.6}
+.exec2-future-slot .t{font-size:11.5px;font-weight:700}
+.exec2-future-slot .s{font-size:10px}
+
+/* ═════════════════════ DENSIDADE DE INTERFACE ═════════════════════
+   3 modos via [data-density] no <html>. Só afeta as áreas acima (que
+   usam os tokens --ds-space-*) — o restante do sistema (styles.css)
+   não lê essas variáveis, então nenhuma outra tela muda de densidade. */
+:root[data-density="compacto"]{
+  --ds-space-4:12px; --ds-space-5:16px; --ds-space-6:22px;
+}
+:root[data-density="compacto"] .exec2-kpi-value{font-size:22px}
+:root[data-density="compacto"] .exec2-card-body{padding:var(--ds-space-3)}
+:root[data-density="compacto"] .exec2-hero{padding:var(--ds-space-4) var(--ds-space-5)}
+:root[data-density="confortavel"]{
+  --ds-space-4:20px; --ds-space-5:32px; --ds-space-6:40px;
+}
+:root[data-density="confortavel"] .exec2-kpi-value{font-size:29px}
+:root[data-density="confortavel"] .exec2-card-body{padding:var(--ds-space-5)}
+
+/* ═════════════════════ RESPONSIVIDADE ═════════════════════════════
+   Os grids do Dashboard (kpi-grid/grid-3/grid-2/ind-grid/future) usam
+   auto-fit+minmax(min(Npx,100%),1fr) — já refluem sozinhos em qualquer
+   largura, sem precisar de breakpoint por grid. Os media queries abaixo
+   cuidam só do que o auto-fit não resolve sozinho (hero, sidebar, topbar). */
+@media(max-width:900px){
+  .exec2-hero{flex-direction:column;align-items:flex-start}
+  .tb-farm-select{max-width:110px}
+}
+@media(max-width:768px){
+  .exec2-hero{padding:var(--ds-space-4)}
+}
