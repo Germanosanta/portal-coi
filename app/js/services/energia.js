@@ -63,15 +63,15 @@ async function energiaSyncCache(){
   if(typeof window.coiDB==='undefined'){ console.warn('[energia] Supabase não configurado — cache vazio.'); return false; }
   try{
     if(!_pivosSupabaseCache.length){
-      const {data:pivosData,error:pErr}=await window.coiDB.from('pivos').select('id,numero');
+      const {data:pivosData,error:pErr}=await window.coiDB.schema('coi').from('pivos').select('id,numero');
       if(pErr) throw pErr;
       _pivosSupabaseCache=pivosData||[];
     }
-    const {data:potData,error:potErr}=await window.coiDB.from('pivos_potencia_tecnica').select('*');
+    const {data:potData,error:potErr}=await window.coiDB.schema('coi').from('pivos_potencia_tecnica').select('*');
     if(potErr) throw potErr;
     _potenciaCache=(potData||[]).map(r=>_potenciaRowToLocal(r,_pivosSupabaseCache));
 
-    const {data:snapData,error:snapErr}=await window.coiDB.from('consumo_energia_calculo').select('*');
+    const {data:snapData,error:snapErr}=await window.coiDB.schema('coi').from('consumo_energia_calculo').select('*');
     if(snapErr) throw snapErr;
     _consumoSnapshotCache=(snapData||[]).map(_snapshotRowToLocal);
     return true;
@@ -117,7 +117,7 @@ async function energiaRegistrarSnapshot(horimetroRegistro){
     potencia_kw:calculo.potenciaKw, rendimento:calculo.rendimento, energia_kwh:calculo.energiaKwh,
     origem_potencia:calculo.origemPotencia,
   };
-  const {data:inserted,error}=await window.coiDB.from('consumo_energia_calculo')
+  const {data:inserted,error}=await window.coiDB.schema('coi').from('consumo_energia_calculo')
     .upsert(row,{onConflict:'horimetro_grupo_id'}).select('*').single();
   if(error){ console.error('[energia] Falha ao registrar snapshot:',error); return {ok:false}; }
   _consumoSnapshotCache=_consumoSnapshotCache.filter(s=>s.horimetroGrupoId!==horimetroRegistro.grupoId);

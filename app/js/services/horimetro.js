@@ -57,10 +57,10 @@ function _rowToLocal(row){
 async function _pivoSupabaseIdPorNumero(numero){
   const existente=_pivosSupabaseCache.find(p=>Number(p.numero)===Number(numero));
   if(existente) return existente.id;
-  const {data,error}=await window.coiDB.from('pivos').select('id,numero').eq('numero',numero).maybeSingle();
+  const {data,error}=await window.coiDB.schema('coi').from('pivos').select('id,numero').eq('numero',numero).maybeSingle();
   if(error) throw error;
   if(data){ _pivosSupabaseCache.push(data); return data.id; }
-  const ins=await window.coiDB.from('pivos').insert({numero}).select('id,numero').single();
+  const ins=await window.coiDB.schema('coi').from('pivos').insert({numero}).select('id,numero').single();
   if(ins.error) throw ins.error;
   _pivosSupabaseCache.push(ins.data);
   return ins.data.id;
@@ -72,11 +72,11 @@ async function _pivoSupabaseIdPorNumero(numero){
 async function horimetroSyncCache(){
   if(typeof window.coiDB==='undefined'){ console.warn('[horimetro] Supabase não configurado — cache vazio.'); return false; }
   try{
-    const {data:pivosData,error:pErr}=await window.coiDB.from('pivos').select('id,numero');
+    const {data:pivosData,error:pErr}=await window.coiDB.schema('coi').from('pivos').select('id,numero');
     if(pErr) throw pErr;
     _pivosSupabaseCache=pivosData||[];
 
-    const {data,error}=await window.coiDB.from('horimetro_lancamentos').select('*').order('criado_em',{ascending:true});
+    const {data,error}=await window.coiDB.schema('coi').from('horimetro_lancamentos').select('*').order('criado_em',{ascending:true});
     if(error) throw error;
     _horimetroCache=(data||[]).map(_rowToLocal);
     _horimetroSyncOk=true;
@@ -172,7 +172,7 @@ async function horimetroCriar(dados){
 
   const grupoId=(crypto&&crypto.randomUUID)?crypto.randomUUID():gId();
   const row=_dadosParaRow(dados,horas,lamina,pivoSupabaseId,{grupo_id:grupoId,versao:1,atual:true,status:'ativo'});
-  const {data:inserted,error}=await window.coiDB.from('horimetro_lancamentos').insert(row).select('*').single();
+  const {data:inserted,error}=await window.coiDB.schema('coi').from('horimetro_lancamentos').insert(row).select('*').single();
   if(error) return {ok:false,erros:['Falha ao gravar no banco: '+error.message]};
 
   const registro=_rowToLocal(inserted);
@@ -203,14 +203,14 @@ async function horimetroAtualizar(grupoId,dados){
   try{ pivoSupabaseId=await _pivoSupabaseIdPorNumero(pivo.numero); }
   catch(err){ return {ok:false,erros:['Falha ao conectar ao banco de horímetros: '+err.message]}; }
 
-  const {error:updErr}=await window.coiDB.from('horimetro_lancamentos').update({atual:false}).eq('id',atualLocal.id);
+  const {error:updErr}=await window.coiDB.schema('coi').from('horimetro_lancamentos').update({atual:false}).eq('id',atualLocal.id);
   if(updErr) return {ok:false,erros:['Falha ao versionar registro anterior: '+updErr.message]};
 
   const row=_dadosParaRow(dados,horas,lamina,pivoSupabaseId,{grupo_id:grupoId,versao:atualLocal.versao+1,atual:true,status:'ativo'});
-  const {data:inserted,error}=await window.coiDB.from('horimetro_lancamentos').insert(row).select('*').single();
+  const {data:inserted,error}=await window.coiDB.schema('coi').from('horimetro_lancamentos').insert(row).select('*').single();
   if(error){
     // reverte a versão anterior para não deixar o grupo sem "atual"
-    await window.coiDB.from('horimetro_lancamentos').update({atual:true}).eq('id',atualLocal.id);
+    await window.coiDB.schema('coi').from('horimetro_lancamentos').update({atual:true}).eq('id',atualLocal.id);
     return {ok:false,erros:['Falha ao gravar nova versão: '+error.message]};
   }
 
@@ -231,7 +231,7 @@ async function horimetroExcluir(grupoId){
   const atualLocal=horimetroTodos().find(r=>r.grupoId===grupoId&&r.atual);
   if(!atualLocal) return {ok:false,erros:['Lançamento não encontrado.']};
 
-  const {error}=await window.coiDB.from('horimetro_lancamentos').update({status:'excluido'}).eq('id',atualLocal.id);
+  const {error}=await window.coiDB.schema('coi').from('horimetro_lancamentos').update({status:'excluido'}).eq('id',atualLocal.id);
   if(error) return {ok:false,erros:['Falha ao excluir: '+error.message]};
 
   atualLocal.status='excluido';

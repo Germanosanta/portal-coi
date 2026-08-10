@@ -40,11 +40,11 @@ async function paradaSyncCache(){
   if(typeof window.coiDB==='undefined'){ console.warn('[parada] Supabase não configurado — cache vazio.'); return false; }
   try{
     if(!_pivosSupabaseCache.length){
-      const {data:pivosData,error:pErr}=await window.coiDB.from('pivos').select('id,numero');
+      const {data:pivosData,error:pErr}=await window.coiDB.schema('coi').from('pivos').select('id,numero');
       if(pErr) throw pErr;
       _pivosSupabaseCache=pivosData||[];
     }
-    const {data,error}=await window.coiDB.from('paradas_lancamentos').select('*').order('criado_em',{ascending:true});
+    const {data,error}=await window.coiDB.schema('coi').from('paradas_lancamentos').select('*').order('criado_em',{ascending:true});
     if(error) throw error;
     _paradaCache=(data||[]).map(r=>_paradaRowToLocal(r,_pivosSupabaseCache));
     return true;
@@ -89,7 +89,7 @@ async function paradaCriar(dados){
 
   const grupoId=(crypto&&crypto.randomUUID)?crypto.randomUUID():gId();
   const row=_paradaDadosParaRow(dados,pivoSupabaseId,{grupo_id:grupoId,versao:1,atual:true,status:'ativo'});
-  const {data:inserted,error}=await window.coiDB.from('paradas_lancamentos').insert(row).select('*').single();
+  const {data:inserted,error}=await window.coiDB.schema('coi').from('paradas_lancamentos').insert(row).select('*').single();
   if(error) return {ok:false,erros:['Falha ao gravar no banco: '+error.message]};
 
   const registro=_paradaRowToLocal(inserted,_pivosSupabaseCache);
@@ -139,13 +139,13 @@ async function paradaAtualizar(grupoId,dados){
 
   const valorAnterior=`${atualLocal.horaInicial}–${atualLocal.horaFinal} (${fmt(atualLocal.tempoParadoHoras,1)}h)`;
 
-  const {error:updErr}=await window.coiDB.from('paradas_lancamentos').update({atual:false}).eq('id',atualLocal.id);
+  const {error:updErr}=await window.coiDB.schema('coi').from('paradas_lancamentos').update({atual:false}).eq('id',atualLocal.id);
   if(updErr) return {ok:false,erros:['Falha ao versionar registro anterior: '+updErr.message]};
 
   const row=_paradaDadosParaRow(dados,pivoSupabaseId,{grupo_id:grupoId,versao:atualLocal.versao+1,atual:true,status:'ativo'});
-  const {data:inserted,error}=await window.coiDB.from('paradas_lancamentos').insert(row).select('*').single();
+  const {data:inserted,error}=await window.coiDB.schema('coi').from('paradas_lancamentos').insert(row).select('*').single();
   if(error){
-    await window.coiDB.from('paradas_lancamentos').update({atual:true}).eq('id',atualLocal.id);
+    await window.coiDB.schema('coi').from('paradas_lancamentos').update({atual:true}).eq('id',atualLocal.id);
     return {ok:false,erros:['Falha ao gravar nova versão: '+error.message]};
   }
 
@@ -165,7 +165,7 @@ async function paradaExcluir(grupoId){
   const atualLocal=paradaTodos().find(r=>r.grupoId===grupoId&&r.atual);
   if(!atualLocal) return {ok:false,erros:['Parada não encontrada.']};
 
-  const {error}=await window.coiDB.from('paradas_lancamentos').update({status:'excluido'}).eq('id',atualLocal.id);
+  const {error}=await window.coiDB.schema('coi').from('paradas_lancamentos').update({status:'excluido'}).eq('id',atualLocal.id);
   if(error) return {ok:false,erros:['Falha ao excluir: '+error.message]};
 
   atualLocal.status='excluido';

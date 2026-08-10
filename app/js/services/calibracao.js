@@ -43,11 +43,11 @@ async function calibracaoSyncCache(){
   if(typeof window.coiDB==='undefined'){ console.warn('[calibracao] Supabase não configurado — cache vazio.'); return false; }
   try{
     if(!_pivosSupabaseCache.length){
-      const {data:pivosData,error:pErr}=await window.coiDB.from('pivos').select('id,numero');
+      const {data:pivosData,error:pErr}=await window.coiDB.schema('coi').from('pivos').select('id,numero');
       if(pErr) throw pErr;
       _pivosSupabaseCache=pivosData||[];
     }
-    const {data,error}=await window.coiDB.from('calibracoes_lancamentos').select('*').order('criado_em',{ascending:true});
+    const {data,error}=await window.coiDB.schema('coi').from('calibracoes_lancamentos').select('*').order('criado_em',{ascending:true});
     if(error) throw error;
     _calibracaoCache=(data||[]).map(r=>_calibracaoRowToLocal(r,_pivosSupabaseCache));
     return true;
@@ -129,7 +129,7 @@ async function calibracaoCriar(dados){
 
   const grupoId=(crypto&&crypto.randomUUID)?crypto.randomUUID():gId();
   const row=_calibracaoDadosParaRow(dados,laminaCalculada100,valorAnterior,variacao,pivoSupabaseId,{grupo_id:grupoId,versao:1,atual:true,status:'ativo'});
-  const {data:inserted,error}=await window.coiDB.from('calibracoes_lancamentos').insert(row).select('*').single();
+  const {data:inserted,error}=await window.coiDB.schema('coi').from('calibracoes_lancamentos').insert(row).select('*').single();
   if(error) return {ok:false,erros:['Falha ao gravar no banco: '+error.message]};
 
   const registro=_calibracaoRowToLocal(inserted,_pivosSupabaseCache);
@@ -159,13 +159,13 @@ async function calibracaoAtualizar(grupoId,dados){
   try{ pivoSupabaseId=await _pivoSupabaseIdPorNumero(pivo.numero); }
   catch(err){ return {ok:false,erros:['Falha ao conectar ao banco de calibrações: '+err.message]}; }
 
-  const {error:updErr}=await window.coiDB.from('calibracoes_lancamentos').update({atual:false}).eq('id',atualLocal.id);
+  const {error:updErr}=await window.coiDB.schema('coi').from('calibracoes_lancamentos').update({atual:false}).eq('id',atualLocal.id);
   if(updErr) return {ok:false,erros:['Falha ao versionar registro anterior: '+updErr.message]};
 
   const row=_calibracaoDadosParaRow(dados,laminaCalculada100,valorAnterior,variacao,pivoSupabaseId,{grupo_id:grupoId,versao:atualLocal.versao+1,atual:true,status:'ativo'});
-  const {data:inserted,error}=await window.coiDB.from('calibracoes_lancamentos').insert(row).select('*').single();
+  const {data:inserted,error}=await window.coiDB.schema('coi').from('calibracoes_lancamentos').insert(row).select('*').single();
   if(error){
-    await window.coiDB.from('calibracoes_lancamentos').update({atual:true}).eq('id',atualLocal.id);
+    await window.coiDB.schema('coi').from('calibracoes_lancamentos').update({atual:true}).eq('id',atualLocal.id);
     return {ok:false,erros:['Falha ao gravar nova versão: '+error.message]};
   }
 
@@ -185,7 +185,7 @@ async function calibracaoExcluir(grupoId){
 
   const eraAMaisRecente=(()=>{ const m=calibracaoUltimaDoPivo(atualLocal.pivoId,null); return m&&m.grupoId===grupoId; })();
 
-  const {error}=await window.coiDB.from('calibracoes_lancamentos').update({status:'excluido'}).eq('id',atualLocal.id);
+  const {error}=await window.coiDB.schema('coi').from('calibracoes_lancamentos').update({status:'excluido'}).eq('id',atualLocal.id);
   if(error) return {ok:false,erros:['Falha ao excluir: '+error.message]};
   atualLocal.status='excluido';
 
