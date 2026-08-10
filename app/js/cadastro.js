@@ -114,6 +114,25 @@ function cadLookupLabel(entity,id){
   return rec?rec[cfg.labelField]:'—';
 }
 
+/* Ponto 3 — "organizar pivôs por aba/categoria... mostrar todos os
+   pivôs": um único `<select>` continua sendo o widget (reaproveitado por
+   Horímetro/Parada/Calibração — nenhuma tela nova), mas agora agrupado
+   por Casa de Bomba via `<optgroup>` nativo do HTML, que já funciona
+   como "aba" de categoria dentro do próprio combo — sem duplicar o
+   cadastro de pivôs nem inventar nenhuma categoria que não exista no
+   cadastro real. Pivôs sem casa de bomba cadastrada caem no grupo
+   "Sem Casa de Bomba" (nunca omitidos). */
+function pivoOptionsAgrupados(pivos){
+  const porCasaBomba={};
+  pivos.forEach(p=>{
+    const chave=p.casaBombaId?cadLookupLabel('casasBomba',p.casaBombaId):'Sem Casa de Bomba';
+    (porCasaBomba[chave]=porCasaBomba[chave]||[]).push(p);
+  });
+  return Object.keys(porCasaBomba).sort().map(grupo=>
+    `<optgroup label="${grupo}">${porCasaBomba[grupo].sort((a,b)=>a.numero-b.numero).map(p=>`<option value="${p.id}">P.${p.numero}</option>`).join('')}</optgroup>`
+  ).join('');
+}
+
 /* Atualiza um ou mais campos de UM registro já existente, sem passar pelo
    formulário genérico (usado por outros serviços quando uma ação deles
    deve refletir num campo do cadastro — ex.: calibração de lâmina
@@ -330,15 +349,16 @@ function cadSubmitForm(){
   if(err){ toast(err,'err'); return; }
   const all=cadAll(entity);
   if(editId){
+    const anterior=all.find(r=>r.id===editId);
     const idx=all.findIndex(r=>r.id===editId);
+    auditLog(cfg.label,'ALTERAÇÃO',`${cfg.labelField}: ${data[cfg.labelField]}`,{
+      registro:editId, valorAnterior:anterior?anterior[cfg.labelField]:'', valorNovo:data[cfg.labelField],
+    });
     all[idx]={...all[idx],...data};
-    auditLog(cfg.label,'ALTERAÇÃO',`${cfg.labelField}: ${data[cfg.labelField]}`);
-    auditoriaRegistrar('ALTERAÇÃO',cfg.label,data[cfg.labelField],'Cadastro atualizado.');
   }else{
     data.id=gId();
     all.push(data);
-    auditLog(cfg.label,'INCLUSÃO',`${cfg.labelField}: ${data[cfg.labelField]}`);
-    auditoriaRegistrar('INCLUSÃO',cfg.label,data[cfg.labelField],'Cadastro criado.');
+    auditLog(cfg.label,'INCLUSÃO',`${cfg.labelField}: ${data[cfg.labelField]}`,{registro:data.id,valorNovo:data[cfg.labelField]});
   }
   cadSaveAll(entity,all);
   cadCloseForm();
@@ -353,8 +373,7 @@ function cadDelete(entity,id){
   if(!rec) return;
   if(!confirm(`Excluir "${rec[cfg.labelField]}" de ${cfg.label}? Esta ação não pode ser desfeita.`)) return;
   cadSaveAll(entity,all.filter(r=>r.id!==id));
-  auditLog(cfg.label,'EXCLUSÃO',`${cfg.labelField}: ${rec[cfg.labelField]}`);
-  auditoriaRegistrar('EXCLUSÃO',cfg.label,rec[cfg.labelField],'Cadastro excluído.');
+  auditLog(cfg.label,'EXCLUSÃO',`${cfg.labelField}: ${rec[cfg.labelField]}`,{registro:id});
   cadRenderList(entity);
   toast('Registro excluído.','ok');
 }

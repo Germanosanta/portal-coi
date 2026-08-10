@@ -127,6 +127,15 @@ function calcVariacao(valorAnterior,valorNovo){
   return {diferenca,percentual};
 }
 
+/* Janela dos últimos N dias terminando hoje (inclusive) — usado pelo
+   Painel Operacional (Ponto 9: "últimos 7 dias" em vez de "hoje"). */
+function ultimosDias(n){
+  const fim=new Date();
+  const inicio=new Date(fim); inicio.setDate(fim.getDate()-(n-1));
+  const iso=x=>x.toISOString().slice(0,10);
+  return {inicio:iso(inicio),fim:iso(fim)};
+}
+
 /* Início (segunda-feira) e fim (domingo) da semana ISO da data informada
    (ou hoje). Usado para "horas na semana". */
 function semanaAtual(dataRef){

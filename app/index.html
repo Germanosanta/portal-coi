@@ -229,22 +229,31 @@
            Problemas → Pendências → Ocorrências → Planejamento → Ações
            Rápidas. Nenhum indicador novo — mesmos dados dos Services já
            existentes, só reorganizados para leitura rápida. -->
-      <div class="exec2-section-title"><span class="t">Resumo Operacional</span></div>
+      <div class="exec2-section-title"><span class="t">Resumo Operacional (Últimos 7 Dias)</span></div>
       <div class="exec2-kpi-grid" id="opdash-resumo"></div>
+      <!-- Ponto 10 — gráfico derivado do MESMO resumo acima (planejamentoResumo),
+           nunca uma segunda fonte de dado só para o gráfico. -->
+      <div class="card" style="margin-top:12px"><div class="card-body" id="opdash-resumo-donut" style="display:flex;justify-content:center"></div></div>
 
       <div class="exec2-section-title"><span class="t">Status dos Pivôs</span></div>
       <div class="exec2-grid-3" id="opdash-status-pivos"></div>
 
-      <div class="exec2-section-title"><span class="t">Indicadores do Dia</span></div>
+      <div class="exec2-section-title"><span class="t">Indicadores (Últimos 7 Dias)</span></div>
       <div class="exec2-kpi-grid" id="opdash-indicadores-dia"></div>
 
-      <div class="exec2-section-title"><span class="t">Execução do Dia</span></div>
+      <!-- Ponto 9 — lista por pivô, últimos 7 dias: feito/não feito/horas/
+           paradas/duração das paradas/situação, tudo derivado dos
+           registros reais (nenhum número fixo). -->
+      <div class="exec2-section-title"><span class="t">Pivôs — Últimos 7 Dias</span></div>
+      <div id="opdash-pivos-7d"></div>
+
+      <div class="exec2-section-title"><span class="t">Execução (Últimos 7 Dias)</span></div>
       <div id="opdash-executado-hoje"></div>
 
-      <div class="exec2-section-title"><span class="t">Pivôs com Problemas</span></div>
+      <div class="exec2-section-title"><span class="t">Pivôs com Problemas (7 dias)</span></div>
       <div id="opdash-pivos-problemas"></div>
 
-      <div class="exec2-section-title"><span class="t">Pendências</span></div>
+      <div class="exec2-section-title"><span class="t">Pendências / Não Feito (7 dias)</span></div>
       <div id="opdash-pendencias"></div>
 
       <div class="exec2-section-title"><span class="t">Ocorrências</span></div>
@@ -950,6 +959,14 @@
               <div class="field"><label>Pivô <span class="req">*</span></label><select class="select" id="lp-pivo" onchange="lp.onPivo()" disabled><option value="">Selecione a fazenda</option></select></div>
               <div class="field"><label>Casa de Bomba</label><input type="text" class="input" id="lp-casabomba" readonly placeholder="—"></div>
             </div>
+            <!-- Ponto 4 — vários pivôs no mesmo fluxo: opcional, some quando
+                 a fazenda só tem 1 pivô ou nenhum marcado (aí vale o select
+                 acima). Marcando mais de um aqui, salvar() usa
+                 paradaCriarMultiplo com a mesma data/hora/motivo. -->
+            <div class="field" id="lp-pivos-multi-field" style="display:none;margin-bottom:.75rem">
+              <label>Ou marque vários pivôs da mesma fazenda (mesma parada para todos)</label>
+              <div id="lp-pivos-multi" class="lp-multi-wrap"></div>
+            </div>
             <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Dados Operacionais</div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
               <div class="field"><label>Categoria <span class="req">*</span></label><select class="select" id="lp-cat" onchange="lp.onCategoria()"><option value="">Selecione...</option></select></div>
@@ -1089,6 +1106,19 @@
         <div class="card" style="margin-bottom:.9rem">
           <div class="card-header"><div class="card-title">Registrar Calibração de Lâmina</div></div>
           <div class="card-body">
+            <!-- Ponto 6 — "a tela deve mostrar somente: LÂMINA ANTERIOR → NOVA
+                 LÂMINA": este resumo é o destaque visual principal, calculado
+                 ao vivo em lc.calc()/lc.onPivo() a partir dos MESMOS campos
+                 do formulário abaixo (nenhum dado novo, nenhuma segunda
+                 fonte). Os demais campos (operador/responsável/método)
+                 continuam disponíveis para quem precisa registrá-los — são
+                 dados reais que o service já persiste, não foram inventados
+                 nem viraram obrigatórios. -->
+            <div id="lc-anterior-nova" class="lc-anterior-nova">
+              <div class="lc-an-item"><span class="lc-an-label">Lâmina Anterior</span><span class="lc-an-val" id="lc-an-anterior">—</span></div>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              <div class="lc-an-item"><span class="lc-an-label">Nova Lâmina</span><span class="lc-an-val lc-an-nova" id="lc-an-nova">—</span></div>
+            </div>
             <div class="op-subhead"><svg viewBox="0 0 24 24"><path d="M3 21V10l9-6 9 6v11"/><path d="M9 21v-6h6v6"/></svg>Identificação</div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
               <div class="field"><label>Data <span class="req">*</span></label><input type="date" class="input" id="lc-data"></div>
@@ -1279,7 +1309,39 @@
         </div>
       </div>
 
-      <div class="exec2-section-title"><span class="t">Histórico</span></div>
+      <!-- Ponto 7 — Relatório de Histórico: módulo PRÓPRIO, físicamente fora
+           de #page-lanc (Módulo Relatórios, não Lançamentos), consultando
+           os MESMOS services de sempre (horimetroConsultar/paradaConsultar/
+           calibracaoAtivas/planejamentoConsultar) — nenhum dado duplicado,
+           nenhum storage novo. A aba "Histórico" dentro de Lançamentos
+           continua existindo (não removi nada que funcionava) — este é o
+           relatório consolidado com filtro por tipo, pivô, usuário e
+           período. -->
+      <div class="exec2-section-title"><span class="t">Relatório de Histórico de Lançamentos</span></div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-header"><div class="card-title">Horímetro · Paradas · Planejamento · Calibração</div>
+          <span id="rel-hist-lanc-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+        <div style="display:flex;gap:.6rem;padding:.65rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+          <select class="select" id="rel-hist-tipo" onchange="renderRelatHistoricoLancamentos()" style="height:30px;font-size:12px;min-width:140px">
+            <option value="">Todos os tipos</option>
+            <option value="Horímetro">Horímetro</option>
+            <option value="Parada">Parada</option>
+            <option value="Planejamento">Planejamento</option>
+            <option value="Calibração">Calibração</option>
+          </select>
+          <select class="select" id="rel-hist-pivo" onchange="renderRelatHistoricoLancamentos()" style="height:30px;font-size:12px;min-width:100px"><option value="">Pivô</option></select>
+          <input type="text" class="input" id="rel-hist-usuario" placeholder="Usuário/operador" oninput="renderRelatHistoricoLancamentos()" style="height:30px;font-size:12px;min-width:140px">
+          <input type="date" class="input" id="rel-hist-inicio" onchange="renderRelatHistoricoLancamentos()" style="height:30px;font-size:12px">
+          <input type="date" class="input" id="rel-hist-fim" onchange="renderRelatHistoricoLancamentos()" style="height:30px;font-size:12px">
+          <button class="btn btn-ghost btn-xs" onclick="relatHistoricoLancamentosLimpar()">✕ Limpar</button>
+        </div>
+        <div class="card-body" style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+          <div id="rel-hist-lanc-donut" style="flex-shrink:0"></div>
+          <div class="table-wrap" id="rel-hist-lanc-tbl" style="flex:1;min-width:280px;max-height:420px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <div class="exec2-section-title"><span class="t">Histórico de Atividades (Exportações/Importações)</span></div>
       <div class="card">
         <div class="card-header"><div class="card-title">Exportações e Importações Recentes</div><span id="rel-historico-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
         <div class="table-wrap" id="rel-historico-tbl"></div>
@@ -1645,9 +1707,13 @@
           <div class="table-wrap" id="admin-usuarios-tbl"></div>
         </div>
 
+        <!-- Ponto 8 — Auditoria como módulo independente: as DUAS trilhas
+             (governança e negócio) já existentes ficam juntas aqui, dentro
+             de Administração, cada uma clara sobre sua origem — nenhuma
+             trilha nova, nenhuma fusão de dados. -->
         <div class="card" style="margin-bottom:1rem" id="admin-auditoria-card">
           <div class="card-header">
-            <div class="card-title">Auditoria</div>
+            <div class="card-title">Auditoria — Governança (Login, Usuários, Permissões)</div>
             <span id="admin-auditoria-cnt" style="font-size:10px;color:var(--text-tertiary)"></span>
           </div>
           <div class="card-body" style="padding-bottom:0">
@@ -1661,6 +1727,14 @@
             </div>
           </div>
           <div class="table-wrap" id="admin-auditoria-tbl"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:1rem" id="admin-audit-negocio-card">
+          <div class="card-header">
+            <div class="card-title">Auditoria — Eventos de Negócio (Horímetro, Paradas, Planejamento, Calibração, Cadastros)</div>
+            <span id="admin-audit-negocio-cnt" style="font-size:10px;color:var(--text-tertiary)"></span>
+          </div>
+          <div class="table-wrap" id="admin-audit-negocio-tbl"></div>
         </div>
 
         <div class="exec2-section-title"><span class="t">Estrutura Preparada</span></div>

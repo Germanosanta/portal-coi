@@ -92,7 +92,7 @@ const lhm={
 
     const fazRec=(cadAll('fazendas')||[]).find(f=>f.nome===faz);
     const pivos=(cadAll('pivos')||[]).filter(p=>p.fazendaId===(fazRec&&fazRec.id)).sort((a,b)=>a.numero-b.numero);
-    pivoSel.innerHTML='<option value="">Selecione...</option>'+pivos.map(p=>`<option value="${p.id}">P.${p.numero}</option>`).join('');
+    pivoSel.innerHTML='<option value="">Selecione...</option>'+pivoOptionsAgrupados(pivos);
     pivoSel.disabled=false;
   },
 
@@ -238,8 +238,11 @@ const lhm={
     document.getElementById('lhm-lam-autolbl').textContent = lamina!==null ? 'auto' : '';
   },
 
-  /* ── SALVAR (cria ou, se em edição, gera nova versão) ─────────── */
-  salvar(dataFuturaAutorizada){
+  /* ── SALVAR (cria ou, se em edição, gera nova versão) ───────────
+     Fase 14 — horimetroCriar/horimetroAtualizar viraram async (gravam
+     no Supabase de verdade); a tela só ganhou o await, nada da lógica
+     de validação/exibição mudou. */
+  async salvar(dataFuturaAutorizada){
     if(bloquearSemPermissao('lancamentos','edit')) return;
     const dados={
       pivoId:v('lhm-pivo'), data:v('lhm-data'), horaInicio:v('lhm-hora'),
@@ -253,7 +256,7 @@ const lhm={
     const lbl=document.getElementById('lhm-salvar-lbl');
     btn.disabled=true; lbl.textContent='Salvando...';
 
-    const resultado=this.editandoGrupoId ? horimetroAtualizar(this.editandoGrupoId,dados) : horimetroCriar(dados);
+    const resultado=this.editandoGrupoId ? await horimetroAtualizar(this.editandoGrupoId,dados) : await horimetroCriar(dados);
 
     if(resultado.dataFuturaPendente){
       btn.disabled=false; lbl.textContent='Salvar Lançamento';
@@ -340,10 +343,9 @@ const lhm={
   excluir(grupoId,btn){
     if(bloquearSemPermissao('lancamentos','delete')) return;
     if(!confirm('Excluir este lançamento? Ele some das consultas, mas o registro permanece guardado e a exclusão fica na auditoria.')) return;
-    opFadeRowThen(btn,()=>{
-      const resultado=horimetroExcluir(grupoId);
+    opFadeRowThen(btn,async()=>{
+      const resultado=await horimetroExcluir(grupoId);
       if(resultado.ok){
-        auditoriaRegistrar('EXCLUSÃO','Horímetro',grupoId,'Lançamento de horímetro excluído.');
         toast('Lançamento excluído.','ok');
         this.renderHist();
         if(typeof atuSB==='function') atuSB();
@@ -549,7 +551,7 @@ const lhf={
     if(!confirm('Excluir esta ocorrência? Ela some das consultas, mas o registro fica guardado e a exclusão vai para a auditoria.')) return;
     opFadeRowThen(btn,()=>{
       const resultado=indicadorExcluir(grupoId);
-      if(resultado.ok){ auditoriaRegistrar('EXCLUSÃO','Falha/Indicador',grupoId,'Ocorrência excluída.'); toast('Ocorrência excluída.','ok'); this.render(); }
+      if(resultado.ok){ toast('Ocorrência excluída.','ok'); this.render(); }
     });
   },
 
@@ -608,12 +610,35 @@ const lp={
   onFaz(){
     const faz=v('lp-faz');
     const pivoSel=document.getElementById('lp-pivo');
+    const multiField=document.getElementById('lp-pivos-multi-field');
+    const multiWrap=document.getElementById('lp-pivos-multi');
     document.getElementById('lp-casabomba').value='';
-    if(!faz){ pivoSel.innerHTML='<option value="">Selecione a fazenda</option>'; pivoSel.disabled=true; return; }
+    if(!faz){
+      pivoSel.innerHTML='<option value="">Selecione a fazenda</option>'; pivoSel.disabled=true;
+      multiField.style.display='none'; multiWrap.innerHTML='';
+      return;
+    }
     const fazRec=(cadAll('fazendas')||[]).find(f=>f.nome===faz);
     const pivos=(cadAll('pivos')||[]).filter(p=>p.fazendaId===(fazRec&&fazRec.id)).sort((a,b)=>a.numero-b.numero);
-    pivoSel.innerHTML='<option value="">Selecione...</option>'+pivos.map(p=>`<option value="${p.id}">P.${p.numero}</option>`).join('');
+    pivoSel.innerHTML='<option value="">Selecione...</option>'+pivoOptionsAgrupados(pivos);
     pivoSel.disabled=false;
+
+    /* Checkboxes só fazem sentido com 2+ pivôs na fazenda escolhida —
+       dado real do cadastro, nenhum pivô inventado. */
+    if(pivos.length>1){
+      multiField.style.display='';
+      multiWrap.innerHTML=pivos.map(p=>`<label class="lp-multi-item"><input type="checkbox" value="${p.id}" onchange="lp.onMultiChange()">P.${p.numero}</label>`).join('');
+    }else{
+      multiField.style.display='none'; multiWrap.innerHTML='';
+    }
+  },
+  /* Marcar checkboxes desativa o select único (evita ambiguidade sobre
+     qual dos dois caminhos vai valer ao salvar). */
+  onMultiChange(){
+    const marcados=this._pivosMultiplosSelecionados();
+    const pivoSel=document.getElementById('lp-pivo');
+    pivoSel.disabled=marcados.length>0;
+    if(marcados.length>0) pivoSel.value='';
   },
   onPivo(){
     const pivoId=v('lp-pivo');
@@ -649,6 +674,8 @@ const lp={
     const pivoSel=document.getElementById('lp-pivo');
     pivoSel.innerHTML='<option value="">Selecione a fazenda</option>'; pivoSel.disabled=true;
     document.getElementById('lp-casabomba').value='';
+    document.getElementById('lp-pivos-multi-field').style.display='none';
+    document.getElementById('lp-pivos-multi').innerHTML='';
     const motivoSel=document.getElementById('lp-motivo');
     motivoSel.innerHTML='<option value="">Selecione a categoria</option>'; motivoSel.disabled=true;
     ['lp-submotivo','lp-criticidade','lp-prioridade'].forEach(id=>document.getElementById(id).value='');
@@ -656,15 +683,21 @@ const lp={
     document.getElementById('lp-salvar-lbl').textContent='Registrar Parada';
   },
 
-  salvar(dataFuturaAutorizada){
+  /* Fase 15 — paradaCriar/paradaAtualizar viraram async (gravam no
+     Supabase de verdade); a tela só ganhou o await. */
+  async salvar(dataFuturaAutorizada){
     if(bloquearSemPermissao('lancamentos','edit')) return;
+    const pivosSel=this._pivosMultiplosSelecionados();
+    if(!this.editandoGrupoId&&pivosSel.length>1){
+      return this.salvarMultiplos(pivosSel,dataFuturaAutorizada);
+    }
     const dados={
       pivoId:v('lp-pivo'), falhaId:v('lp-motivo'), data:v('lp-data'),
       horaInicial:v('lp-h1'), horaFinal:v('lp-h2'),
       operador:v('lp-oper'), tecnicoId:v('lp-tecnico'), tipoParada:v('lp-tipo'),
       observacao:v('lp-obs'), dataFuturaAutorizada:!!dataFuturaAutorizada,
     };
-    const resultado=this.editandoGrupoId?paradaAtualizar(this.editandoGrupoId,dados):paradaCriar(dados);
+    const resultado=this.editandoGrupoId?await paradaAtualizar(this.editandoGrupoId,dados):await paradaCriar(dados);
     if(resultado.dataFuturaPendente){
       if(confirm('A data informada é futura. Confirma mesmo assim?')) this.salvar(true);
       return;
@@ -673,6 +706,30 @@ const lp={
 
     toast(this.editandoGrupoId?'Parada atualizada.':'Parada registrada com sucesso.','ok');
     this.editandoGrupoId=null;
+    this.limpar();
+    this.render();
+  },
+
+  /* Ponto 4 — "permitir vários pivôs no mesmo fluxo": se o campo opcional
+     `lp-pivos-multi` (checkboxes, um por pivô da fazenda escolhida) tiver
+     mais de um marcado, usa-se este caminho em vez do select único —
+     mesma data/hora/motivo/observação para cada pivô selecionado,
+     reaproveitando paradaCriarMultiplo (mesma validação por pivô). */
+  _pivosMultiplosSelecionados(){
+    const wrap=document.getElementById('lp-pivos-multi');
+    if(!wrap) return [];
+    return Array.from(wrap.querySelectorAll('input[type="checkbox"]:checked')).map(c=>c.value);
+  },
+  async salvarMultiplos(pivoIds,dataFuturaAutorizada){
+    const dadosComuns={
+      falhaId:v('lp-motivo'), data:v('lp-data'),
+      horaInicial:v('lp-h1'), horaFinal:v('lp-h2'),
+      operador:v('lp-oper'), tecnicoId:v('lp-tecnico'), tipoParada:v('lp-tipo'),
+      observacao:v('lp-obs'), dataFuturaAutorizada:!!dataFuturaAutorizada,
+    };
+    const resultado=await paradaCriarMultiplo(pivoIds,dadosComuns);
+    if(resultado.sucesso) toast(`${resultado.sucesso} parada(s) registrada(s).${resultado.falhas?` ${resultado.falhas} falharam.`:''}`,resultado.falhas?'warn':'ok');
+    else toast('Não foi possível registrar as paradas.','err');
     this.limpar();
     this.render();
   },
@@ -708,9 +765,9 @@ const lp={
   excluir(grupoId,btn){
     if(bloquearSemPermissao('lancamentos','delete')) return;
     if(!confirm('Excluir esta parada? Ela some das consultas, mas o registro fica guardado e a exclusão vai para a auditoria.')) return;
-    opFadeRowThen(btn,()=>{
-      const resultado=paradaExcluir(grupoId);
-      if(resultado.ok){ auditoriaRegistrar('EXCLUSÃO','Paradas',grupoId,'Parada excluída.'); toast('Parada excluída.','ok'); this.render(); }
+    opFadeRowThen(btn,async()=>{
+      const resultado=await paradaExcluir(grupoId);
+      if(resultado.ok){ toast('Parada excluída.','ok'); this.render(); }
     });
   },
   verVersoes(grupoId){
@@ -786,7 +843,7 @@ const lft={
     if(!faz){ pivoSel.innerHTML='<option value="">Selecione a fazenda</option>'; pivoSel.disabled=true; return; }
     const fazRec=(cadAll('fazendas')||[]).find(f=>f.nome===faz);
     const pivos=(cadAll('pivos')||[]).filter(p=>p.fazendaId===(fazRec&&fazRec.id)).sort((a,b)=>a.numero-b.numero);
-    pivoSel.innerHTML='<option value="">Selecione...</option>'+pivos.map(p=>`<option value="${p.id}">P.${p.numero}</option>`).join('');
+    pivoSel.innerHTML='<option value="">Selecione...</option>'+pivoOptionsAgrupados(pivos);
     pivoSel.disabled=false;
   },
   onPivo(){
@@ -869,7 +926,7 @@ const lft={
     if(!confirm('Excluir esta fertirrigação? Ela some das consultas, mas o registro fica guardado e a exclusão vai para a auditoria.')) return;
     opFadeRowThen(btn,()=>{
       const resultado=fertiExcluir(grupoId);
-      if(resultado.ok){ auditoriaRegistrar('EXCLUSÃO','Fertirrigação',grupoId,'Fertirrigação excluída.'); toast('Fertirrigação excluída.','ok'); this.render(); }
+      if(resultado.ok){ toast('Fertirrigação excluída.','ok'); this.render(); }
     });
   },
   verVersoes(grupoId){
@@ -945,7 +1002,7 @@ const lc={
     if(!faz){ pivoSel.innerHTML='<option value="">Selecione a fazenda</option>'; pivoSel.disabled=true; return; }
     const fazRec=(cadAll('fazendas')||[]).find(f=>f.nome===faz);
     const pivos=(cadAll('pivos')||[]).filter(p=>p.fazendaId===(fazRec&&fazRec.id)).sort((a,b)=>a.numero-b.numero);
-    pivoSel.innerHTML='<option value="">Selecione...</option>'+pivos.map(p=>`<option value="${p.id}">P.${p.numero}</option>`).join('');
+    pivoSel.innerHTML='<option value="">Selecione...</option>'+pivoOptionsAgrupados(pivos);
     pivoSel.disabled=false;
   },
   onPivo(){
@@ -969,6 +1026,10 @@ const lc={
       document.getElementById('lc-diferenca').value='—';
       document.getElementById('lc-variacao').value='—';
     }
+
+    // Ponto 6 — resumo Anterior → Nova (mesmos valores acima, só em destaque)
+    document.getElementById('lc-an-anterior').textContent=anterior?fmt(anterior,2)+' mm':'—';
+    document.getElementById('lc-an-nova').textContent=calculada!=null?fmt(calculada,2)+' mm':'—';
   },
 
   limpar(){
@@ -983,10 +1044,12 @@ const lc={
     document.getElementById('lc-calculada-display').textContent='—';
     document.getElementById('lc-diferenca').value='—';
     document.getElementById('lc-variacao').value='—';
+    document.getElementById('lc-an-anterior').textContent='—';
+    document.getElementById('lc-an-nova').textContent='—';
     document.getElementById('lc-salvar-lbl').textContent='Registrar Calibração';
   },
 
-  salvar(){
+  async salvar(){
     if(bloquearSemPermissao('lancamentos','edit')) return;
     const dados={
       pivoId:v('lc-pivo'), data:v('lc-data'), hora:v('lc-hora'),
@@ -994,7 +1057,7 @@ const lc={
       laminaMedida:v('lc-lamina-medida'), percentualUtilizado:v('lc-percentual'),
       metodoCalibracao:v('lc-metodo'), observacoes:v('lc-obs'),
     };
-    const resultado=this.editandoGrupoId?calibracaoAtualizar(this.editandoGrupoId,dados):calibracaoCriar(dados);
+    const resultado=this.editandoGrupoId?await calibracaoAtualizar(this.editandoGrupoId,dados):await calibracaoCriar(dados);
     if(!resultado.ok){ toast((resultado.erros&&resultado.erros[0])||'Não foi possível salvar.','err'); return; }
 
     toast(this.editandoGrupoId?'Calibração atualizada — lâmina do pivô já foi ajustada.':'Calibração registrada — lâmina do pivô já foi ajustada.','ok');
@@ -1028,9 +1091,9 @@ const lc={
   excluir(grupoId,btn){
     if(bloquearSemPermissao('lancamentos','delete')) return;
     if(!confirm('Excluir esta calibração? Ela some das consultas, mas o registro fica guardado e a exclusão vai para a auditoria.')) return;
-    opFadeRowThen(btn,()=>{
-      const resultado=calibracaoExcluir(grupoId);
-      if(resultado.ok){ auditoriaRegistrar('EXCLUSÃO','Calibração',grupoId,'Calibração excluída.'); toast('Calibração excluída.','ok'); this.render(); }
+    opFadeRowThen(btn,async()=>{
+      const resultado=await calibracaoExcluir(grupoId);
+      if(resultado.ok){ toast('Calibração excluída.','ok'); this.render(); }
     });
   },
   verVersoes(grupoId){

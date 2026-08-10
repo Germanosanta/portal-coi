@@ -174,10 +174,14 @@ function importacaoRevalidarLinha(item){
 }
 
 /* ── EFETIVAÇÃO ───────────────────────────────────────────────────── */
-function importacaoCommitar(preview){
+/* Fase 18 — planejamentoCriar/Atualizar viraram async (gravam no
+   Supabase); o laço virou `for...of` com `await` para gravar uma linha
+   de cada vez, na ordem, e realmente confirmar cada gravação antes de
+   contar sucesso/falha — nenhuma regra de importação mudou. */
+async function importacaoCommitar(preview){
   const contexto=importacaoMontarContexto();
   let sucesso=0,falhas=0;
-  preview.linhas.filter(l=>l.valido).forEach(item=>{
+  for(const item of preview.linhas.filter(l=>l.valido)){
     const pivoRaw=String(importacaoCampo(item.dados,'pivo')).trim();
     const pivo=contexto.pivosPorNumero[pivoRaw];
     const data=importacaoNormalizarData(importacaoCampo(item.dados,'data'));
@@ -189,9 +193,9 @@ function importacaoCommitar(preview){
       observacao:String(importacaoCampo(item.dados,'observacao')).trim(),
     };
     const existente=planejamentoAtivos().find(p=>p.pivoId===pivo.id&&p.data===data);
-    const resultado=existente?planejamentoAtualizar(existente.grupoId,dadosPlanejamento):planejamentoCriar(dadosPlanejamento);
+    const resultado=existente?await planejamentoAtualizar(existente.grupoId,dadosPlanejamento):await planejamentoCriar(dadosPlanejamento);
     if(resultado.ok) sucesso++; else falhas++;
-  });
+  }
   auditLog('Importação de Planejamento','INCLUSÃO',`${sucesso} registro(s) importado(s)${falhas?`, ${falhas} falharam na gravação`:''}.`);
   return {sucesso,falhas};
 }

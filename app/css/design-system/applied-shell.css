@@ -90,7 +90,7 @@
    com o tema, em vez de um retângulo branco por cima do hero escuro. */
 .home-brand-strip{position:relative;display:flex;justify-content:center;align-items:center;background:#fff;
   border:1px solid var(--ds-border);border-radius:var(--ds-radius-lg);padding:var(--ds-space-3) var(--ds-space-4)}
-.home-brand-strip img{height:44px;width:auto;max-width:100%;object-fit:contain}
+.home-brand-strip img{height:72px;width:auto;max-width:100%;object-fit:contain}
 /* Sair (Sprint 01) — o Portal COI não tem topbar/sidebar, então precisa
    do próprio atalho de saída; posicionado à direita sem tirar a logo do
    centro (position:absolute em vez de disputar espaço no flex). */
@@ -207,6 +207,28 @@ body.coi-portal .main{margin-left:0}
    eram irmãos diretos de .page-wrap. */
 #page-lanc .page-wrap,#page-cad .page-wrap{display:grid;grid-template-columns:196px 1fr;
   gap:var(--ds-space-5);align-items:start}
+
+/* Ponto 1 — abas centralizadas: só as abas em linha horizontal (ETL
+   Histórica em Consulta) — o sidenav vertical de Lançamentos/Cadastros
+   em telas largas não é afetado (centralizar no eixo cruzado de uma
+   coluna bagunçaria o layout fixo lateral já existente). */
+#page-dados .tabs{justify-content:center}
+
+/* Ponto 4 — Paradas em vários pivôs (js/lanc.js lp.onFaz/onMultiChange) */
+.lp-multi-wrap{display:flex;flex-wrap:wrap;gap:6px 12px;padding:8px 0}
+.lp-multi-item{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
+  color:var(--ds-text-secondary);cursor:pointer}
+.lp-multi-item input{margin:0}
+
+/* Ponto 6 — resumo Anterior → Nova (js/lanc.js lc.calc()) */
+.lc-anterior-nova{display:flex;align-items:center;justify-content:center;gap:18px;
+  padding:16px;margin-bottom:14px;border-radius:var(--ds-radius-lg);
+  background:color-mix(in srgb,var(--ds-brand) 6%,var(--ds-bg-surface-2));
+  border:1px solid var(--ds-border);color:var(--ds-text-tertiary)}
+.lc-an-item{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:120px}
+.lc-an-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ds-text-tertiary)}
+.lc-an-val{font-size:22px;font-weight:800;color:var(--ds-text-primary)}
+.lc-an-val.lc-an-nova{color:var(--ds-brand)}
 #page-lanc .page-wrap>.page-header,#page-cad .page-wrap>.page-header{grid-column:1/-1}
 #page-lanc .page-wrap>.lanc-sidenav,#page-cad .page-wrap>.tabs{
   grid-column:1;display:flex;flex-direction:column;flex-wrap:nowrap;gap:2px;
@@ -220,7 +242,7 @@ body.coi-portal .main{margin-left:0}
 @media(max-width:1024px){
   #page-lanc .page-wrap,#page-cad .page-wrap{grid-template-columns:1fr}
   #page-lanc .page-wrap>.lanc-sidenav,#page-cad .page-wrap>.tabs{
-    grid-column:1;flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1.5px solid var(--ds-border)!important;
+    grid-column:1;flex-direction:row;flex-wrap:wrap;justify-content:center;border-right:none;border-bottom:1.5px solid var(--ds-border)!important;
     position:static;padding-right:0;padding-bottom:var(--ds-space-2)}
   #page-lanc .tab-btn,#page-cad .tab-btn{border-right:none!important;border-bottom:2.5px solid transparent;
     border-radius:var(--ds-radius-sm) var(--ds-radius-sm) 0 0}

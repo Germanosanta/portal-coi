@@ -44,9 +44,9 @@ const imp={
     this.render();
   },
 
-  importar(){
+  async importar(){
     if(!this.preview||!this.preview.linhasValidas){ toast('Nenhuma linha válida para importar.','warn'); return; }
-    const resultado=importacaoCommitar(this.preview);
+    const resultado=await importacaoCommitar(this.preview);
     toast(`${resultado.sucesso} registro(s) importado(s)${resultado.falhas?`, ${resultado.falhas} falharam`:''}.`,resultado.falhas?'warn':'ok');
     this.limpar();
   },
@@ -128,9 +128,9 @@ const planUI={
     const texto=versoes.map(v=>`v${v.versao} — ${fmtD(v.data)} — ${v.percentual}% — ${v.atual?'ATUAL':'substituída'}`).join('\n');
     alert('Histórico de versões deste planejamento (nada é apagado, cada correção vira uma nova versão):\n\n'+texto);
   },
-  excluir(grupoId){
+  async excluir(grupoId){
     if(!confirm('Excluir este planejamento? Ele some das consultas, mas o registro fica guardado e a exclusão vai para a auditoria.')) return;
-    const resultado=planejamentoExcluir(grupoId);
+    const resultado=await planejamentoExcluir(grupoId);
     if(resultado.ok){ toast('Planejamento excluído.','ok'); this.render(); }
   },
   clear(){

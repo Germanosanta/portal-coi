@@ -415,6 +415,7 @@ function renderAdmin(){
 
   renderAdminUsuariosTabela();
   renderAdminAuditoria();
+  renderAdminAuditoriaNegocio();
 
   const box=document.getElementById('admin-cards');
   if(!box) return;
@@ -478,6 +479,18 @@ function renderAdminAuditoria(){
       <td style="font-size:11px;color:var(--text-secondary)">${r.descricao||'—'}</td>
     </tr>`).join('')}</tbody></table>`:emEl('Nenhum evento de auditoria encontrado com esses filtros.');
 }
+/* Ponto 8 — Auditoria de eventos de NEGÓCIO (Horímetro/Paradas/
+   Planejamento/Calibração/Cadastros) dentro do módulo independente de
+   Administração — mesma trilha única (js/audit.js, `coi_audit`) que já
+   alimenta a aba "Auditoria" de Lançamentos, sem segunda fonte. */
+function renderAdminAuditoriaNegocio(){
+  const tbl=document.getElementById('admin-audit-negocio-tbl'); if(!tbl) return;
+  const cnt=document.getElementById('admin-audit-negocio-cnt');
+  const list=auditAll();
+  if(cnt) cnt.textContent=list.length.toLocaleString('pt-BR')+' evento(s)';
+  tbl.innerHTML=auditTabelaHtml(list);
+}
+
 function adminAuditoriaFiltrar(){
   ADMIN_AUD_FILTROS.usuario=document.getElementById('admin-aud-usuario')?.value||'';
   ADMIN_AUD_FILTROS.modulo=document.getElementById('admin-aud-modulo')?.value||'';

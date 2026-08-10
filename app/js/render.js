@@ -473,7 +473,79 @@ function renderRelat(){
   });
 
   renderRelatFavoritos();
+  renderRelatHistoricoLancamentos();
   renderRelatHistorico();
+}
+
+/* ── PONTO 7 — RELATÓRIO DE HISTÓRICO DE LANÇAMENTOS ─────────────────
+   Módulo próprio dentro de Relatórios (fisicamente fora de #page-lanc).
+   Consolida Horímetro/Paradas/Planejamento/Calibração usando as MESMAS
+   consultas que cada service já expõe (horimetroConsultar/paradaConsultar/
+   planejamentoConsultar/calibracaoAtivas) — nenhuma leitura direta de
+   storage aqui, nenhum dado duplicado. O filtro "Usuário" busca em
+   operador/responsável, o campo que cada tipo já usa para isso. */
+function relatHistoricoLancamentosLimpar(){
+  ['rel-hist-tipo','rel-hist-pivo','rel-hist-usuario','rel-hist-inicio','rel-hist-fim'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  renderRelatHistoricoLancamentos();
+}
+function relatHistoricoLancamentosDados(){
+  const tipo=v('rel-hist-tipo'), pivoId=v('rel-hist-pivo'),
+    usuario=(v('rel-hist-usuario')||'').toLowerCase().trim(),
+    dataInicio=v('rel-hist-inicio')||undefined, dataFim=v('rel-hist-fim')||undefined;
+  const filtros={dataInicio,dataFim,pivoId:pivoId||undefined};
+
+  let itens=[];
+  if(!tipo||tipo==='Horímetro'){
+    itens.push(...horimetroConsultar(filtros).map(r=>({tipo:'Horímetro',pivoId:r.pivoId,data:r.data,usuario:r.operador,
+      status:'Feito',detalhe:`${fmt(r.horimetroInicial,1)}→${fmt(r.horimetroFinal,1)} (${fmt(r.horas,1)}h)`})));
+  }
+  if(!tipo||tipo==='Parada'){
+    itens.push(...paradaConsultar(filtros).map(r=>({tipo:'Parada',pivoId:r.pivoId,data:r.data,usuario:r.operador,
+      status:'Registrada',detalhe:`${r.horaInicial}–${r.horaFinal} (${fmt(r.tempoParadoHoras,1)}h)`})));
+  }
+  if(!tipo||tipo==='Planejamento'){
+    itens.push(...planejamentoConsultar(filtros).map(r=>({tipo:'Planejamento',pivoId:r.pivoId,data:r.data,usuario:'',
+      status:planejamentoStatusExecucao(r),detalhe:`${r.percentual}%${r.naoFeito?' — '+(r.motivoNaoFeito||'—'):''}`})));
+  }
+  if(!tipo||tipo==='Calibração'){
+    itens.push(...calibracaoAtivas()
+      .filter(r=>(!pivoId||r.pivoId===pivoId)&&(!dataInicio||r.data>=dataInicio)&&(!dataFim||r.data<=dataFim))
+      .map(r=>({tipo:'Calibração',pivoId:r.pivoId,data:r.data,usuario:r.operador,
+        status:'Registrada',detalhe:`${r.laminaAnterior??'—'} → ${fmt(r.laminaCalculada100,2)} mm`})));
+  }
+  if(usuario) itens=itens.filter(i=>(i.usuario||'').toLowerCase().includes(usuario));
+  return itens.sort((a,b)=>b.data.localeCompare(a.data));
+}
+function renderRelatHistoricoLancamentos(){
+  const tbl=document.getElementById('rel-hist-lanc-tbl'); if(!tbl) return;
+  const pivoSel=document.getElementById('rel-hist-pivo');
+  if(pivoSel&&!pivoSel.dataset.built){
+    pivoSel.innerHTML='<option value="">Pivô</option>'+pivoOptionsAgrupados((cadAll('pivos')||[]).sort((a,b)=>a.numero-b.numero));
+    pivoSel.dataset.built='1';
+  }
+  const itens=relatHistoricoLancamentosDados();
+  const cnt=document.getElementById('rel-hist-lanc-cnt');
+  if(cnt) cnt.textContent=itens.length.toLocaleString('pt-BR')+' registros';
+
+  const STATUS_BADGE={'Feito':'b-success','Registrada':'b-info','pendente':'b-warning','nao_feito':'b-danger','feito':'b-success'};
+  tbl.innerHTML=itens.length?`<table class="table"><thead><tr><th>Tipo</th><th>Data</th><th>Pivô</th><th>Usuário</th><th>Status</th><th>Detalhe</th></tr></thead><tbody>${itens.slice(0,300).map(i=>{
+    const p=horimetroPivoInfo(i.pivoId);
+    return `<tr><td>${i.tipo}</td><td>${fmtD(i.data)}</td><td><span class="badge b-brand">P.${p?p.numero:'?'}</span></td><td>${i.usuario||'—'}</td><td><span class="badge ${STATUS_BADGE[i.status]||'b-neutral'}">${i.status}</span></td><td style="font-size:11px;color:var(--text-secondary)">${i.detalhe}</td></tr>`;
+  }).join('')}</tbody></table>`:emEl('Nenhum registro para os filtros escolhidos.');
+
+  /* Ponto 10 — donut por tipo, derivado da MESMA lista `itens` da tabela
+     ao lado (nenhuma segunda consulta para o gráfico). */
+  const donutBox=document.getElementById('rel-hist-lanc-donut');
+  if(donutBox){
+    const porTipo={};
+    itens.forEach(i=>{ porTipo[i.tipo]=(porTipo[i.tipo]||0)+1; });
+    const CORES_TIPO={'Horímetro':'#0284c7','Parada':'#dc2626','Planejamento':'#d97706','Calibração':'#7c3aed'};
+    donutBox.innerHTML=itens.length
+      ? donut(Object.keys(porTipo).map(t=>({v:porTipo[t],c:CORES_TIPO[t]||'#64748b',l:t})),itens.length,'registros',130)
+      : '';
+  }
 }
 
 /* Favoritos (Fase 12.1) — reaproveita a mesma estrela de favoritos da

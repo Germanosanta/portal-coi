@@ -123,25 +123,40 @@ function feedRowHtml(f){
   return execListRow(f.cls,f.icon,titulo,f.resumo,horaDe(f.criadoEm));
 }
 
-/* ── RESUMO OPERACIONAL (Sprint 01.2) — único bloco no topo da tela, os
-   5 números que respondem "como está a irrigação hoje" em poucos
-   segundos. Mesmo cruzamento planejado×executado de planejamentoResumo
-   já usado no restante do painel + indicadorEficiencia (já existente,
-   utilização×disponibilidade) — nenhum cálculo novo. */
+/* ── RESUMO OPERACIONAL (Ponto 9 — janela de ÚLTIMOS 7 DIAS, não mais
+   "hoje": um pivô com irrigação de madrugada ou um lançamento feito com
+   1 dia de atraso não pode desaparecer do painel). Mesmo cruzamento
+   planejado×executado de planejamentoResumo já usado no restante do
+   painel + indicadorEficiencia (já existente, utilização×disponibilidade)
+   — nenhum cálculo novo, só o período mudou de 1 dia para 7. */
 function renderResumoOperacional(){
   const box=document.getElementById('opdash-resumo'); if(!box) return;
-  const hoje=today();
-  const resumo=planejamentoResumo(hoje,hoje);
-  const pivosParada=new Set(paradaAtivas().filter(r=>r.data===hoje).map(r=>r.pivoId)).size;
-  const eficiencia=indicadorEficiencia(hoje,hoje);
+  const {inicio,fim}=ultimosDias(7);
+  const resumo=planejamentoResumo(inicio,fim);
+  const pivosParada=new Set(paradaAtivas().filter(r=>r.data>=inicio&&r.data<=fim).map(r=>r.pivoId)).size;
+  const eficiencia=indicadorEficiencia(inicio,fim);
 
   box.innerHTML=[
-    execKpiCard({label:'Planejados Hoje',icon:'calendar',value:resumo.total,sub:'irrigação prevista para hoje'}),
-    execKpiCard({label:'Executados Hoje',icon:'droplet',value:resumo.feito,sub:resumo.total?`${fmt(resumo.assertividade,0)}% do planejado`:'sem planejamento hoje',color:'c-green'}),
-    execKpiCard({label:'Com Parada',icon:'pause',value:pivosParada,sub:'pivôs pararam hoje',color:pivosParada>0?'c-amber':'c-green'}),
-    execKpiCard({label:'Pendentes',icon:'alert',value:resumo.pendente,sub:'planejados e ainda não executados',color:resumo.pendente>0?'c-amber':'c-green'}),
-    execKpiCard({label:'Eficiência',icon:'trending',value:fmt(eficiencia,0),unit:'%',sub:'utilização × disponibilidade, hoje',color:eficiencia>=70?'c-green':eficiencia>=40?'c-amber':'c-red'}),
+    execKpiCard({label:'Planejados (7 dias)',icon:'calendar',value:resumo.total,sub:'irrigação prevista nos últimos 7 dias'}),
+    execKpiCard({label:'Executados (7 dias)',icon:'droplet',value:resumo.feito,sub:resumo.total?`${fmt(resumo.assertividade,0)}% do planejado`:'sem planejamento no período',color:'c-green'}),
+    execKpiCard({label:'Com Parada (7 dias)',icon:'pause',value:pivosParada,sub:'pivôs pararam no período',color:pivosParada>0?'c-amber':'c-green'}),
+    execKpiCard({label:'Não Feito (7 dias)',icon:'alert',value:resumo.naoFeito,sub:'marcados com motivo',color:resumo.naoFeito>0?'c-red':'c-green'}),
+    execKpiCard({label:'Pendentes (7 dias)',icon:'clockCirc',value:resumo.pendente,sub:'planejados e ainda sem decisão',color:resumo.pendente>0?'c-amber':'c-green'}),
+    execKpiCard({label:'Eficiência (7 dias)',icon:'trending',value:fmt(eficiencia,0),unit:'%',sub:'utilização × disponibilidade, últimos 7 dias',color:eficiencia>=70?'c-green':eficiencia>=40?'c-amber':'c-red'}),
   ].join('');
+
+  /* Ponto 10 — donut Feito × Não Feito × Pendente, os MESMOS 3 números
+     do resumo acima (nenhuma segunda consulta/fonte para o gráfico). */
+  const donutBox=document.getElementById('opdash-resumo-donut');
+  if(donutBox){
+    donutBox.innerHTML=resumo.total
+      ? donut([
+          {v:resumo.feito,c:'#16a34a',l:'Feito'},
+          {v:resumo.naoFeito,c:'#dc2626',l:'Não Feito'},
+          {v:resumo.pendente,c:'#d97706',l:'Pendente'},
+        ],resumo.total,'planejados (7d)',140)
+      : emEl('Sem planejamento nos últimos 7 dias para comparar.');
+  }
 }
 
 /* ── STATUS DOS PIVÔS (Sprint 01.2) — apoio ao Resumo Operacional:
@@ -177,21 +192,22 @@ function renderStatusPivos(){
    (Horímetro). Nenhum campo novo: mesmos registros de horimetroAtivos()
    filtrados por hoje. Cada linha ganha um selo discreto "Concluído"
    (mesmo badge/cor de sucesso já usado em toda a tela). */
+/* Ponto 9 — "Executado Hoje" virou "Executado nos Últimos 7 Dias". */
 function renderExecutadoHoje(){
   const box=document.getElementById('opdash-executado-hoje'); if(!box) return;
-  const hoje=today();
+  const {inicio,fim}=ultimosDias(7);
   const pivos=cadAll('pivos')||[];
   const pivoInfo=id=>pivos.find(p=>p.id===id);
 
-  const executados=horimetroAtivos().filter(r=>r.data===hoje).sort((a,b)=>(b.criadoEm||'').localeCompare(a.criadoEm||''));
+  const executados=horimetroAtivos().filter(r=>r.data>=inicio&&r.data<=fim).sort((a,b)=>(b.criadoEm||'').localeCompare(a.criadoEm||''));
   box.innerHTML=`<div class="exec2-card">
-    <div class="exec2-card-head"><span class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">${SB_ICON.droplet}</svg>Executado Hoje</span>
+    <div class="exec2-card-head"><span class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">${SB_ICON.droplet}</svg>Executado (Últimos 7 Dias)</span>
       <span class="badge b-brand">${executados.length}</span></div>
     <div class="exec2-card-body" style="padding:0">
-      <div class="table-wrap">${executados.length?`<table class="table"><thead><tr><th>Pivô</th><th>Fazenda</th><th>Cultura</th><th>Horas</th><th>Horário</th><th></th></tr></thead><tbody>${executados.map(r=>{
+      <div class="table-wrap">${executados.length?`<table class="table"><thead><tr><th>Data</th><th>Pivô</th><th>Fazenda</th><th>Cultura</th><th>Horas</th><th></th></tr></thead><tbody>${executados.map(r=>{
         const p=pivoInfo(r.pivoId);
-        return `<tr><td><span class="badge b-brand">P.${p?p.numero:'?'}</span></td><td>${p?cadLookupLabel('fazendas',p.fazendaId):'—'}</td><td>${r.cultura||'—'}</td><td>${fmt(r.horas,1)}h</td><td>${r.horaInicio||horaDe(r.criadoEm)}</td><td><span class="badge b-success"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3">${SB_ICON.check}</svg>Concluído</span></td></tr>`;
-      }).join('')}</tbody></table>`:emEl('Nenhum lançamento de horímetro hoje.')}</div>
+        return `<tr><td>${fmtD(r.data)}</td><td><span class="badge b-brand">P.${p?p.numero:'?'}</span></td><td>${p?cadLookupLabel('fazendas',p.fazendaId):'—'}</td><td>${r.cultura||'—'}</td><td>${fmt(r.horas,1)}h</td><td><span class="badge b-success"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3">${SB_ICON.check}</svg>Concluído</span></td></tr>`;
+      }).join('')}</tbody></table>`:emEl('Nenhum lançamento de horímetro nos últimos 7 dias.')}</div>
     </div>
   </div>`;
 }
@@ -202,52 +218,110 @@ function renderExecutadoHoje(){
    campo já usado em Cadastros > Falhas e na tabela de Falha/Indicador)
    ganham destaque visual — nenhuma regra de negócio nova, só leitura do
    mesmo dado já cadastrado. */
+/* Ponto 9 — "pararam hoje" virou "pararam nos últimos 7 dias". */
 function renderPivosComProblemas(){
   const box=document.getElementById('opdash-pivos-problemas'); if(!box) return;
-  const hoje=today();
+  const {inicio,fim}=ultimosDias(7);
   const pivos=cadAll('pivos')||[];
   const pivoInfo=id=>pivos.find(p=>p.id===id);
 
-  const paradasHojeArr=paradaAtivas().filter(r=>r.data===hoje).sort((a,b)=>(b.criadoEm||'').localeCompare(a.criadoEm||''));
+  const paradas7d=paradaAtivas().filter(r=>r.data>=inicio&&r.data<=fim).sort((a,b)=>(b.criadoEm||'').localeCompare(a.criadoEm||''));
+
+  /* Ponto 10 — donut por categoria de motivo, derivado da MESMA lista
+     paradas7d que alimenta a tabela abaixo (paradaPorCategoria já
+     existia em services/parada.js, reaproveitado sem duplicar filtro). */
+  const porCategoria=paradaPorCategoria(paradas7d);
+  const CORES_CAT={'Mecânico':'#2563eb','Elétrico':'#dc2626','Operacional':'#d97706'};
+  const donutHtml=porCategoria.length
+    ? donut(porCategoria.map(c=>({v:c.valor,c:CORES_CAT[c.chave]||'#64748b',l:c.chave})),
+        fmt(calcAcumulado(paradas7d,'tempoParadoHoras'),1)+'h','parado (7d)',130)
+    : '';
+
   box.innerHTML=`<div class="exec2-card">
-    <div class="exec2-card-head"><span class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">${SB_ICON.alert}</svg>Pivôs com Problemas</span>
-      <span class="badge ${paradasHojeArr.length?'b-danger':'b-success'}">${paradasHojeArr.length}</span></div>
-    <div class="exec2-card-body" style="padding:0">
-      <div class="table-wrap">${paradasHojeArr.length?`<table class="table"><thead><tr><th>Pivô</th><th>Fazenda</th><th>Motivo</th><th>Tempo Parado</th><th>Responsável</th></tr></thead><tbody>${paradasHojeArr.map(r=>{
+    <div class="exec2-card-head"><span class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">${SB_ICON.alert}</svg>Pivôs com Problemas (7 dias)</span>
+      <span class="badge ${paradas7d.length?'b-danger':'b-success'}">${paradas7d.length}</span></div>
+    <div class="exec2-card-body" style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+      ${donutHtml?`<div style="flex-shrink:0">${donutHtml}</div>`:''}
+      <div class="table-wrap" style="flex:1;min-width:280px">${paradas7d.length?`<table class="table"><thead><tr><th>Data</th><th>Pivô</th><th>Fazenda</th><th>Motivo</th><th>Tempo Parado</th><th>Responsável</th></tr></thead><tbody>${paradas7d.map(r=>{
         const p=pivoInfo(r.pivoId), falha=indicadorFalhaInfo(r.falhaId);
         const critico=falha&&falha.criticidade==='Alta';
         const responsavel=r.tecnicoId?cadLookupLabel('tecnicos',r.tecnicoId):(r.operador||'—');
-        return `<tr class="${critico?'op-critical':''}"><td><span class="badge b-brand">P.${p?p.numero:'?'}</span></td><td>${p?cadLookupLabel('fazendas',p.fazendaId):'—'}</td><td>${falha?`${falha.categoria} — ${falha.motivo}`:'—'}${critico?' <span class="badge b-danger">Crítico</span>':''}</td><td>${fmt(r.tempoParadoHoras,1)}h</td><td>${responsavel}</td></tr>`;
-      }).join('')}</tbody></table>`:emEl('Nenhuma parada registrada hoje.')}</div>
+        return `<tr class="${critico?'op-critical':''}"><td>${fmtD(r.data)}</td><td><span class="badge b-brand">P.${p?p.numero:'?'}</span></td><td>${p?cadLookupLabel('fazendas',p.fazendaId):'—'}</td><td>${falha?`${falha.categoria} — ${falha.motivo}`:(r.motivoTexto||'—')}${critico?' <span class="badge b-danger">Crítico</span>':''}</td><td>${fmt(r.tempoParadoHoras,1)}h</td><td>${responsavel}</td></tr>`;
+      }).join('')}</tbody></table>`:emEl('Nenhuma parada registrada nos últimos 7 dias.')}</div>
     </div>
   </div>`;
 }
 
-/* ── PENDÊNCIAS (Sprint 01.2) — pivôs planejados para hoje que ainda não
-   têm nem execução (Horímetro) nem parada registrada. Nenhum Service ou
-   armazenamento novo: só planejamentoConsultar()/horimetroAtivos()/
-   paradaAtivas(), já existentes — o mesmo cruzamento que planejamentoResumo
-   já faz, aqui aplicado pivô a pivô só para listar quem falta. */
+/* ── PENDÊNCIAS / NÃO FEITO (Ponto 5 + Ponto 9) — pivôs planejados nos
+   últimos 7 dias que ainda não têm execução (Horímetro) nem parada
+   registrada entram como "Pendente"; os que já foram explicitamente
+   marcados como Não Feito (planejamentoMarcarNaoFeito, com motivo)
+   aparecem separados, mostrando o motivo. Reaproveita
+   planejamentoConsultar/horimetroAtivos/paradaAtivas — nenhum
+   armazenamento novo. */
 function renderPendencias(){
   const box=document.getElementById('opdash-pendencias'); if(!box) return;
-  const hoje=today();
-  const planejados=planejamentoConsultar({dataInicio:hoje,dataFim:hoje});
-  const executadosSet=new Set(horimetroAtivos().filter(r=>r.data===hoje).map(r=>r.pivoId));
-  const paradaSet=new Set(paradaAtivas().filter(r=>r.data===hoje).map(r=>r.pivoId));
-  const pendentes=planejados.filter(p=>!executadosSet.has(p.pivoId)&&!paradaSet.has(p.pivoId));
+  const {inicio,fim}=ultimosDias(7);
+  const planejados=planejamentoConsultar({dataInicio:inicio,dataFim:fim});
+  const executadosSet=new Set(horimetroAtivos().filter(r=>r.data>=inicio&&r.data<=fim).map(r=>r.pivoId+'_'+r.data));
+  const paradaSet=new Set(paradaAtivas().filter(r=>r.data>=inicio&&r.data<=fim).map(r=>r.pivoId));
   const pivos=cadAll('pivos')||[];
   const pivoInfo=id=>pivos.find(x=>x.id===id);
 
+  const naoFeitos=planejados.filter(p=>!executadosSet.has(p.pivoId+'_'+p.data)&&p.naoFeito);
+  const pendentes=planejados.filter(p=>!executadosSet.has(p.pivoId+'_'+p.data)&&!p.naoFeito&&!paradaSet.has(p.pivoId));
+
+  const linhaPendente=p=>{
+    const pivo=pivoInfo(p.pivoId);
+    return `<div class="exec2-list-row">
+      <div class="exec2-list-icon i-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${SB_ICON.pivot}</svg></div>
+      <div class="exec2-list-main"><div class="exec2-list-title">P.${pivo?pivo.numero:'?'} · ${pivo?cadLookupLabel('fazendas',pivo.fazendaId):'—'}</div>
+        <div class="exec2-list-sub">planejado ${p.percentual}%${p.cultura?' · '+p.cultura:''} · ${fmtD(p.data)}</div></div>
+      <button class="btn btn-ghost btn-xs" onclick="opMarcarNaoFeito('${p.grupoId}')">Marcar Não Feito</button>
+    </div>`;
+  };
+  const linhaNaoFeito=p=>{
+    const pivo=pivoInfo(p.pivoId);
+    return `<div class="exec2-list-row">
+      <div class="exec2-list-icon i-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${SB_ICON.pivot}</svg></div>
+      <div class="exec2-list-main"><div class="exec2-list-title">P.${pivo?pivo.numero:'?'} · ${pivo?cadLookupLabel('fazendas',pivo.fazendaId):'—'}</div>
+        <div class="exec2-list-sub">${fmtD(p.data)} — não feito: ${p.motivoNaoFeito||'—'}</div></div>
+      <button class="btn btn-ghost btn-xs" onclick="opDesmarcarNaoFeito('${p.grupoId}')">Desfazer</button>
+    </div>`;
+  };
+
   box.innerHTML=`<div class="exec2-card">
-    <div class="exec2-card-head"><span class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">${SB_ICON.clockCirc}</svg>Aguardando Execução</span>
+    <div class="exec2-card-head"><span class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">${SB_ICON.clockCirc}</svg>Aguardando Execução (7 dias)</span>
       <span class="badge ${pendentes.length?'b-warning':'b-success'}">${pendentes.length}</span></div>
     <div class="exec2-card-body">
-      <div class="exec2-list">${pendentes.length?pendentes.map(p=>{
-        const pivo=pivoInfo(p.pivoId);
-        return execListRow('i-warn','pivot',`P.${pivo?pivo.numero:'?'} · ${pivo?cadLookupLabel('fazendas',pivo.fazendaId):'—'}`,`planejado ${p.percentual}%${p.cultura?' · '+p.cultura:''}`,'');
-      }).join(''):'<div class="exec2-empty">Nenhum pivô planejado está pendente — tudo executado ou com parada registrada.</div>'}</div>
+      <div class="exec2-list">${pendentes.length?pendentes.map(linhaPendente).join(''):'<div class="exec2-empty">Nenhum pivô planejado está pendente — tudo executado, com parada ou marcado como não feito.</div>'}</div>
+    </div>
+  </div>
+  <div class="exec2-card" style="margin-top:12px">
+    <div class="exec2-card-head"><span class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">${SB_ICON.alert}</svg>Não Feito (7 dias)</span>
+      <span class="badge ${naoFeitos.length?'b-danger':'b-success'}">${naoFeitos.length}</span></div>
+    <div class="exec2-card-body">
+      <div class="exec2-list">${naoFeitos.length?naoFeitos.map(linhaNaoFeito).join(''):'<div class="exec2-empty">Nenhum planejamento marcado como não feito nos últimos 7 dias.</div>'}</div>
     </div>
   </div>`;
+}
+
+/* Handlers globais (chamados por onclick nas linhas acima) — pedem o
+   motivo via prompt (mesma UX simples já usada em confirm() no resto do
+   app) e delegam 100% ao service; nenhuma gravação acontece aqui. */
+async function opMarcarNaoFeito(grupoId){
+  const motivo=prompt('Motivo do não cumprimento (obrigatório):');
+  if(motivo===null) return;
+  const r=await planejamentoMarcarNaoFeito(grupoId,motivo);
+  if(!r.ok){ toast((r.erros&&r.erros[0])||'Não foi possível marcar.','err'); return; }
+  toast('Planejamento marcado como não feito.','ok');
+  renderPendencias();
+}
+async function opDesmarcarNaoFeito(grupoId){
+  const r=await planejamentoDesmarcarNaoFeito(grupoId);
+  if(!r.ok){ toast((r.erros&&r.erros[0])||'Não foi possível desfazer.','err'); return; }
+  toast('Marcação desfeita.','ok');
+  renderPendencias();
 }
 
 /* ── OCORRÊNCIAS (Sprint 01.2) — últimos lançamentos, sempre do mais
@@ -433,26 +507,71 @@ function renderExecLive(){
    mais detalhe (operação/manutenção/inativos). Todos os números vêm de
    funções que já existiam em services/indicador.js, parada.js etc. ou
    de computeKpisPrincipaisData — nenhum cálculo novo. */
+/* Ponto 9 — "hoje" virou "últimos 7 dias" (janela rolante). */
 function renderIndicadoresDoDia(){
   const box=document.getElementById('opdash-indicadores-dia'); if(!box) return;
-  const hoje=today();
-  const horasHoje=indicadorHorasHoje();
-  const falhasHoje=indicadorAtivos().filter(r=>r.data===hoje).length;
+  const {inicio,fim}=ultimosDias(7);
+  const horas7d=calcAcumulado(horimetroAtivos().filter(r=>r.data>=inicio&&r.data<=fim));
+  const falhas7d=indicadorAtivos().filter(r=>r.data>=inicio&&r.data<=fim).length;
   const d=computeKpisPrincipaisData();
 
   box.innerHTML=[
-    execKpiCard({label:'Horas Trabalhadas',icon:'droplet',value:fmt(horasHoje,1),unit:'h',sub:'hoje, todos os pivôs'}),
-    execKpiCard({label:'Paradas',icon:'pause',value:d.parHoje,sub:`${d.parSemAtual} esta semana`,trend:execTrend(d.parSemAtual,d.parSemAnt),color:d.parHoje>0?'c-amber':'c-green'}),
-    execKpiCard({label:'Falhas',icon:'alert',value:falhasHoje,sub:'ocorrências hoje',color:falhasHoje>0?'c-red':'c-green'}),
-    execKpiCard({label:'Fertirrigações',icon:'droplet',value:d.fertiHoje,sub:`${d.fertiSemAtual} esta semana`,trend:execTrend(d.fertiSemAtual,d.fertiSemAnt)}),
+    execKpiCard({label:'Horas Trabalhadas',icon:'droplet',value:fmt(horas7d,1),unit:'h',sub:'últimos 7 dias, todos os pivôs'}),
+    execKpiCard({label:'Paradas',icon:'pause',value:d.parSemAtual,sub:`${d.parSemAtual} nos últimos 7 dias`,trend:execTrend(d.parSemAtual,d.parSemAnt),color:d.parSemAtual>0?'c-amber':'c-green'}),
+    execKpiCard({label:'Falhas',icon:'alert',value:falhas7d,sub:'ocorrências nos últimos 7 dias',color:falhas7d>0?'c-red':'c-green'}),
+    execKpiCard({label:'Fertirrigações',icon:'droplet',value:d.fertiSemAtual,sub:`${d.fertiSemAtual} nos últimos 7 dias`,trend:execTrend(d.fertiSemAtual,d.fertiSemAnt)}),
     execKpiCard({label:'Calibrações Recentes',icon:'gaugeCal',value:d.cal30,sub:d.calUlt?`última em ${fmtD(d.calUlt.data)}`:'sem calibrações registradas'}),
   ].join('');
+}
+
+/* Ponto 9 — "apresentar pivôs em lista": 1 linha por pivô ATIVO do
+   cadastro, com o que aconteceu nos últimos 7 dias — feito (tem
+   Horímetro), não feito (marcado explicitamente, Ponto 5), horas
+   trabalhadas, nº de paradas e duração total parada. "Situação" resume
+   os 3 (Operando/Parado/Sem lançamento). Nenhum dado inventado: pivô
+   sem nenhum registro no período mostra tudo zerado/"—", não é omitido
+   nem preenchido com valor arbitrário. */
+function renderPivosUltimos7Dias(){
+  const box=document.getElementById('opdash-pivos-7d'); if(!box) return;
+  const {inicio,fim}=ultimosDias(7);
+  const pivos=(cadAll('pivos')||[]).filter(p=>p.status==='Ativo').sort((a,b)=>a.numero-b.numero);
+  const hor7d=horimetroAtivos().filter(r=>r.data>=inicio&&r.data<=fim);
+  const par7d=paradaAtivas().filter(r=>r.data>=inicio&&r.data<=fim);
+  const plan7d=planejamentoConsultar({dataInicio:inicio,dataFim:fim});
+
+  const linhas=pivos.map(p=>{
+    const horP=hor7d.filter(r=>r.pivoId===p.id);
+    const parP=par7d.filter(r=>r.pivoId===p.id);
+    const planP=plan7d.filter(r=>r.pivoId===p.id);
+    const horas=calcAcumulado(horP);
+    const duracaoParada=calcAcumulado(parP,'tempoParadoHoras');
+    const feito=horP.length>0;
+    const naoFeito=!feito&&planP.some(pl=>pl.naoFeito);
+    const situacao=feito?'Operando':(parP.length>0?'Parado':(naoFeito?'Não Feito':'Sem lançamento'));
+    const corSituacao=feito?'b-success':(parP.length>0?'b-danger':(naoFeito?'b-warning':'b-neutral'));
+    return `<tr>
+      <td><span class="badge b-brand">P.${p.numero}</span></td>
+      <td>${cadLookupLabel('fazendas',p.fazendaId)}</td>
+      <td>${feito?'<span class="badge b-success">Feito</span>':(naoFeito?'<span class="badge b-warning">Não Feito</span>':'<span class="badge b-neutral">—</span>')}</td>
+      <td>${fmt(horas,1)}h</td>
+      <td>${parP.length}</td>
+      <td>${fmt(duracaoParada,1)}h</td>
+      <td><span class="badge ${corSituacao}">${situacao}</span></td>
+    </tr>`;
+  }).join('');
+
+  box.innerHTML=`<div class="exec2-card">
+    <div class="exec2-card-body" style="padding:0">
+      <div class="table-wrap">${pivos.length?`<table class="table"><thead><tr><th>Pivô</th><th>Fazenda</th><th>Feito?</th><th>Horas (7d)</th><th>Paradas (7d)</th><th>Duração Parada (7d)</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table>`:emEl('Nenhum pivô ativo cadastrado.')}</div>
+    </div>
+  </div>`;
 }
 
 function renderOpDash(){
   renderResumoOperacional();
   renderStatusPivos();
   renderIndicadoresDoDia();
+  renderPivosUltimos7Dias();
   renderExecutadoHoje();
   renderPivosComProblemas();
   renderPendencias();
