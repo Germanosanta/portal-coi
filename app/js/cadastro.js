@@ -216,6 +216,142 @@ function cadSeedIfEmpty(){
       });
     }
   }
+  /* Casas de Bomba + Pivôs — reconciliado a partir de BASE DE DADOS/
+     informações pivôs e reservatorios Elavatórias Captacões e Poços.xlsx,
+     aba "Infor_Pivos" (108 pivôs Karitel+RDM, extraídos e conferidos em
+     supabase/seed/pivos_potencia_import.csv). Mesmo padrão de
+     Culturas/Falhas: só CRIA a Casa de Bomba que ainda não existe e só
+     PREENCHE o campo do pivô que estiver em branco — nunca sobrescreve
+     Casa de Bomba/Área já editada manualmente por alguém. */
+  const PIVOS_TECNICO_SEED=[
+    {numero:1,fazenda:"KARITEL",casaBomba:"R0",area:150.01},
+    {numero:2,fazenda:"KARITEL",casaBomba:"R0",area:123.72},
+    {numero:3,fazenda:"KARITEL",casaBomba:"R0",area:150.01},
+    {numero:4,fazenda:"KARITEL",casaBomba:"R0",area:62.76},
+    {numero:5,fazenda:"KARITEL",casaBomba:"R1",area:150.01},
+    {numero:6,fazenda:"KARITEL",casaBomba:"R1",area:150.01},
+    {numero:7,fazenda:"KARITEL",casaBomba:"R2",area:120.13},
+    {numero:8,fazenda:"KARITEL",casaBomba:"R2",area:150.01},
+    {numero:9,fazenda:"KARITEL",casaBomba:"R3",area:120.13},
+    {numero:10,fazenda:"KARITEL",casaBomba:"R3",area:150.01},
+    {numero:11,fazenda:"KARITEL",casaBomba:"R5",area:121.12},
+    {numero:12,fazenda:"KARITEL",casaBomba:"R5",area:150.01},
+    {numero:13,fazenda:"KARITEL",casaBomba:"R5",area:71.3},
+    {numero:14,fazenda:"KARITEL",casaBomba:"R6",area:150.01},
+    {numero:15,fazenda:"KARITEL",casaBomba:"R1",area:150.01},
+    {numero:16,fazenda:"KARITEL",casaBomba:"R1",area:150.01},
+    {numero:17,fazenda:"KARITEL",casaBomba:"R2",area:150.01},
+    {numero:18,fazenda:"KARITEL",casaBomba:"R2",area:150.01},
+    {numero:19,fazenda:"KARITEL",casaBomba:"R3",area:150.01},
+    {numero:20,fazenda:"KARITEL",casaBomba:"R3",area:150.01},
+    {numero:21,fazenda:"KARITEL",casaBomba:"R4",area:150.01},
+    {numero:22,fazenda:"KARITEL",casaBomba:"R4",area:150.01},
+    {numero:23,fazenda:"KARITEL",casaBomba:"R6",area:150.01},
+    {numero:24,fazenda:"KARITEL",casaBomba:"R6",area:150.01},
+    {numero:25,fazenda:"KARITEL",casaBomba:"R7",area:99.7},
+    {numero:26,fazenda:"KARITEL",casaBomba:"R7",area:150.01},
+    {numero:27,fazenda:"KARITEL",casaBomba:"R7",area:99.14},
+    {numero:28,fazenda:"KARITEL",casaBomba:"R7",area:132.99},
+    {numero:29,fazenda:"KARITEL",casaBomba:"R7",area:78.55},
+    {numero:30,fazenda:"KARITEL",casaBomba:"C3Z3/R7",area:150.01},
+    {numero:31,fazenda:"KARITEL",casaBomba:"C3Z3/R7",area:150.01},
+    {numero:32,fazenda:"KARITEL",casaBomba:"C3Z3/R7",area:138.03},
+    {numero:33,fazenda:"KARITEL",casaBomba:"C3Z3/R7",area:137.67},
+    {numero:34,fazenda:"KARITEL",casaBomba:"C3Z3/R7",area:150.01},
+    {numero:35,fazenda:"KARITEL",casaBomba:"R8",area:150.54},
+    {numero:36,fazenda:"KARITEL",casaBomba:"R8",area:150.54},
+    {numero:37,fazenda:"KARITEL",casaBomba:"R8",area:72},
+    {numero:38,fazenda:"KARITEL",casaBomba:"R8",area:141},
+    {numero:39,fazenda:"KARITEL",casaBomba:"R10",area:100.65},
+    {numero:40,fazenda:"KARITEL",casaBomba:"R10",area:150.54},
+    {numero:41,fazenda:"KARITEL",casaBomba:"R9",area:138.55},
+    {numero:42,fazenda:"KARITEL",casaBomba:"R9",area:100.65},
+    {numero:43,fazenda:"KARITEL",casaBomba:"R9",area:138.55},
+    {numero:45,fazenda:"KARITEL",casaBomba:"R11",area:123.47},
+    {numero:46,fazenda:"KARITEL",casaBomba:"R11",area:159.45},
+    {numero:47,fazenda:"KARITEL",casaBomba:"R11",area:159.45},
+    {numero:48,fazenda:"KARITEL",casaBomba:"R11",area:159.45},
+    {numero:49,fazenda:"KARITEL",casaBomba:"R11",area:124.31},
+    {numero:52,fazenda:"KARITEL",casaBomba:"R12",area:159.45},
+    {numero:73,fazenda:"KARITEL",casaBomba:"R12",area:159.45},
+    {numero:74,fazenda:"KARITEL",casaBomba:"R12",area:159.45},
+    {numero:44,fazenda:"KARITEL",casaBomba:"R13",area:74.68},
+    {numero:50,fazenda:"KARITEL",casaBomba:"R14",area:120.31},
+    {numero:51,fazenda:"KARITEL",casaBomba:"R14",area:119.34},
+    {numero:53,fazenda:"KARITEL",casaBomba:"R13",area:74.68},
+    {numero:54,fazenda:"KARITEL",casaBomba:"R13",area:121.22},
+    {numero:55,fazenda:"KARITEL",casaBomba:"R13",area:151.33},
+    {numero:56,fazenda:"KARITEL",casaBomba:"R14",area:151.2},
+    {numero:57,fazenda:"KARITEL",casaBomba:"R15",area:150.24},
+    {numero:58,fazenda:"KARITEL",casaBomba:"R15",area:150.24},
+    {numero:59,fazenda:"KARITEL",casaBomba:"R15",area:144.4},
+    {numero:60,fazenda:"KARITEL",casaBomba:"R15",area:150.24},
+    {numero:61,fazenda:"KARITEL",casaBomba:"R16",area:145.71},
+    {numero:62,fazenda:"KARITEL",casaBomba:"R16",area:140.89},
+    {numero:63,fazenda:"KARITEL",casaBomba:"R18",area:80.15},
+    {numero:64,fazenda:"KARITEL",casaBomba:"R18",area:80.15},
+    {numero:65,fazenda:"KARITEL",casaBomba:"R18",area:150.24},
+    {numero:66,fazenda:"KARITEL",casaBomba:"R15",area:100.86},
+    {numero:67,fazenda:"KARITEL",casaBomba:"R16",area:80.25},
+    {numero:68,fazenda:"KARITEL",casaBomba:"R16",area:80.25},
+    {numero:69,fazenda:"KARITEL",casaBomba:"R17",area:80.25},
+    {numero:70,fazenda:"KARITEL",casaBomba:"R17",area:150.24},
+    {numero:71,fazenda:"KARITEL",casaBomba:"R17",area:40.23},
+    {numero:72,fazenda:"KARITEL",casaBomba:"R17",area:125.51},
+    {numero:101,fazenda:"RDM",casaBomba:"RM4",area:116.2},
+    {numero:102,fazenda:"RDM",casaBomba:"RM4",area:102.19},
+    {numero:103,fazenda:"RDM",casaBomba:"RM4",area:102.01},
+    {numero:104,fazenda:"RDM",casaBomba:"RM4",area:102.01},
+    {numero:105,fazenda:"RDM",casaBomba:"RM3",area:102.01},
+    {numero:106,fazenda:"RDM",casaBomba:"RM2",area:102.01},
+    {numero:107,fazenda:"RDM",casaBomba:"RM3",area:102.01},
+    {numero:108,fazenda:"RDM",casaBomba:"RM2",area:102.01},
+    {numero:109,fazenda:"RDM",casaBomba:"RM1",area:102.01},
+    {numero:110,fazenda:"RDM",casaBomba:"RM4",area:102.19},
+    {numero:112,fazenda:"RDM",casaBomba:"RM5",area:150.34},
+    {numero:113,fazenda:"RDM",casaBomba:"RM5",area:150.14},
+    {numero:114,fazenda:"RDM",casaBomba:"RM5",area:120.13},
+    {numero:115,fazenda:"RDM",casaBomba:"RM5",area:150.34},
+    {numero:116,fazenda:"RDM",casaBomba:"RM6",area:150.34},
+    {numero:117,fazenda:"RDM",casaBomba:"RM6",area:150.34},
+    {numero:118,fazenda:"RDM",casaBomba:"RM6",area:150.14},
+    {numero:119,fazenda:"RDM",casaBomba:"RM6",area:150.34},
+    {numero:120,fazenda:"RDM",casaBomba:"RM7",area:150.34},
+    {numero:121,fazenda:"RDM",casaBomba:"RM7",area:150.34},
+    {numero:122,fazenda:"RDM",casaBomba:"RM7",area:150.14},
+    {numero:123,fazenda:"RDM",casaBomba:"RM7",area:150.34},
+    {numero:124,fazenda:"RDM",casaBomba:"RM7",area:150.14},
+    {numero:125,fazenda:"RDM",casaBomba:"RM7",area:100.79},
+    {numero:126,fazenda:"RDM",casaBomba:"RM7",area:140.57},
+    {numero:127,fazenda:"RDM",casaBomba:"RM7",area:102.43},
+    {numero:128,fazenda:"RDM",casaBomba:"RM6",area:140.57},
+    {numero:129,fazenda:"RDM",casaBomba:"RM6",area:102.43},
+    {numero:130,fazenda:"RDM",casaBomba:"RM6",area:150.14},
+    {numero:131,fazenda:"RDM",casaBomba:"RM5",area:100.1},
+    {numero:132,fazenda:"RDM",casaBomba:"RM5",area:100.1},
+    {numero:133,fazenda:"RDM",casaBomba:"RM7",area:101.12},
+  ];
+  if(cadAll('fazendas').length&&cadAll('pivos').length){
+    const fazendasAtuais=cadAll('fazendas');
+    const fazIdPorNome=nome=>(fazendasAtuais.find(f=>f.nome===nome)||{}).id||'';
+    // 1) garante 1 Casa de Bomba por código único (fazenda+código), sem duplicar
+    const casasUnicas=[...new Map(PIVOS_TECNICO_SEED.map(p=>[p.fazenda+'␟'+p.casaBomba,p])).values()];
+    cadEnsureDefaults('casasBomba',casasUnicas.map(p=>({nome:p.casaBomba,fazendaId:fazIdPorNome(p.fazenda),setorId:'',localizacao:''})));
+    // 2) só preenche Casa de Bomba/Área do pivô se estiverem em branco —
+    //    nunca sobrescreve o que já foi editado manualmente
+    const casasBombaAtuais=cadAll('casasBomba');
+    PIVOS_TECNICO_SEED.forEach(seed=>{
+      const fazId=fazIdPorNome(seed.fazenda);
+      const pivoLocal=cadAll('pivos').find(p=>p.numero===seed.numero&&p.fazendaId===fazId);
+      if(!pivoLocal) return; // pivô não existe no cadastro local — não inventa um novo aqui, fora de escopo desta reconciliação
+      const casaLocal=casasBombaAtuais.find(c=>c.nome===seed.casaBomba&&c.fazendaId===fazId);
+      const patch={};
+      if(!pivoLocal.casaBombaId&&casaLocal) patch.casaBombaId=casaLocal.id;
+      if(pivoLocal.area==null&&seed.area!=null) patch.area=seed.area;
+      if(Object.keys(patch).length) cadPatchRecord('pivos',pivoLocal.id,patch);
+    });
+  }
+
   // Culturas: reconciliado (não só semeado) — reaproveita registros já
   // existentes/editados pelo usuário e só acrescenta os nomes da lista
   // mestre que ainda não estiverem cadastrados, sem duplicar nem apagar.
