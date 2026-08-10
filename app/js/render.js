@@ -28,6 +28,7 @@ function goPage(id, btn) {
   if(id==='itv')     renderItv();
   if(id==='hor')     renderHor();
   if(id==='fal')     renderFal();
+  if(id==='energia') { if(typeof renderEnergia==='function') renderEnergia(); }
   if(id==='lanc')    { lhm.tabNav('lanc'); if(typeof renderLancHist==='function') renderLancHist(); }
   if(id==='relat')   renderRelat();
   if(id==='dados')   { rDTE();rDTI();rDTH();rDTF();rDTFe(); if(typeof dq!=='undefined'){ dq.init(); restoreDqLegadoState(); } }

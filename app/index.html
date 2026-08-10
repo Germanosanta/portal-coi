@@ -547,6 +547,44 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════════════
+       MÓDULO: CONSUMO DE ENERGIA — relaciona Irrigação Executada
+       (services/horimetro.js) com a ficha técnica do motor-bomba
+       (services/energia.js, fonte: BASE DE DADOS/informações pivôs e
+       reservatorios...xlsx). ENERGIA = kWh (sem custo/tarifa nesta
+       primeira versão, conforme definido). ═══════════════════════ -->
+  <div class="page" id="page-energia">
+    <div class="page-wrap">
+      <div class="page-header">
+        <div><div class="page-title">Consumo de Energia</div><div class="page-subtitle">kWh estimados a partir da irrigação executada (Horímetro) × potência do conjunto motor-bomba de cada pivô</div></div>
+      </div>
+
+      <div class="alert alert-info" style="margin-bottom:1rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div><div class="alert-title">Metodologia</div>Energia = Horas de irrigação × Potência elétrica estimada (CV × 0,7457, mesmo fator já usado na planilha de origem). Pivôs sem potência cadastrada mostram "Dado não disponível" — nunca um número inventado. Sem rendimento do motor/conjunto disponível na fonte, o cálculo não o aplica.</div>
+      </div>
+
+      <div style="display:flex;gap:.6rem;padding:.65rem 1rem;background:var(--bg-surface2);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:1rem;flex-wrap:wrap">
+        <select class="select" id="en-faz" onchange="renderEnergia()" style="height:32px;font-size:12px;min-width:110px"><option value="">Fazenda</option></select>
+        <select class="select" id="en-pivo" onchange="renderEnergia()" style="height:32px;font-size:12px;min-width:100px"><option value="">Pivô</option></select>
+        <input type="date" class="input" id="en-inicio" onchange="renderEnergia()" style="height:32px;font-size:12px">
+        <input type="date" class="input" id="en-fim" onchange="renderEnergia()" style="height:32px;font-size:12px">
+        <button class="btn btn-ghost btn-xs" onclick="energiaFiltroLimpar()">✕ Limpar</button>
+      </div>
+
+      <div class="kpi-grid" id="en-kpis" style="margin-bottom:1rem"></div>
+
+      <div class="g2" style="margin-bottom:1rem">
+        <div class="card"><div class="card-header"><div class="card-title">Consumo por Dia</div></div><div class="card-body" id="en-por-dia"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Consumo por Pivô</div></div><div class="card-body" id="en-por-pivo"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">Irrigações Executadas — Memória de Cálculo</div><span id="en-tbl-cnt" style="font-size:10px;color:var(--text-tertiary)"></span></div>
+        <div class="table-wrap" id="en-tbl" style="max-height:440px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- LANC: LANÇAMENTOS ─────────────────────────────────────── -->
     <!-- ═══════════════════════════════════════════════════════════
@@ -1849,6 +1887,7 @@
 <script src="js/services/fertirrigacao.js"></script>
 <script src="js/services/planejamento.js"></script>
 <script src="js/services/calibracao.js"></script>
+<script src="js/services/energia.js"></script>
 <script src="js/services/usuarios.js"></script>
 <script src="js/services/permissoes.js"></script>
 <script src="js/services/database.js"></script>

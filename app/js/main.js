@@ -41,6 +41,7 @@ async function bootApp(){
   if(typeof paradaSyncCache==='function') await paradaSyncCache();
   if(typeof calibracaoSyncCache==='function') await calibracaoSyncCache();
   if(typeof planejamentoSyncCache==='function') await planejamentoSyncCache();
+  if(typeof energiaSyncCache==='function') await energiaSyncCache();
   iniciarSincronizacaoPeriodica();
   buildSelects();
   atuSB();
@@ -76,6 +77,7 @@ function iniciarSincronizacaoPeriodica(){
     const okP=typeof paradaSyncCache==='function'?await paradaSyncCache():true;
     const okC=typeof calibracaoSyncCache==='function'?await calibracaoSyncCache():true;
     const okPl=typeof planejamentoSyncCache==='function'?await planejamentoSyncCache():true;
+    if(typeof energiaSyncCache==='function') await energiaSyncCache();
     /* Não força goPage() em 'lanc'/'cad': são telas de formulário com
        abas e digitação em andamento — trocar de aba/perder o formulário
        a cada 30min seria pior que os dados ficarem 30min "velhos" até a

@@ -268,6 +268,12 @@ const lhm={
 
     toast(this.editandoGrupoId?'Lançamento atualizado com sucesso.':'Lançamento salvo com sucesso.','ok');
     this.mostrarResumo(resultado.registro);
+    /* Consumo de Energia — congela a potência usada NESTE momento, sem
+       tocar em nada do fluxo/validação do Horímetro acima. Falha aqui
+       nunca bloqueia o salvamento do Horímetro (já confirmado ok). */
+    if(typeof energiaRegistrarSnapshot==='function'){
+      try{ await energiaRegistrarSnapshot(resultado.registro); }catch(e){ console.error('[energia] snapshot falhou:',e); }
+    }
     if(typeof atuSB==='function') atuSB();
     this.editandoGrupoId=null;
     this.limparCamposAposSalvar();

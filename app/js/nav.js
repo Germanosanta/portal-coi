@@ -300,6 +300,7 @@ const SB_MODULES=[
   {key:'itv',label:'Paradas',desc:'Análise de tempos de parada (ETL)',group:'Indicadores',icon:'clockCirc',page:'itv',dataPage:'itv'},
   {key:'fertiAnalitico',label:'Consumo',desc:'Consumo de produtos de fertirrigação (Analítico)',group:'Indicadores',icon:'droplet',page:'ferti',dataPage:'ferti'},
   {key:'horEtl',label:'Equipamentos',desc:'Base consolidada de horímetro por equipamento',group:'Indicadores',icon:'gaugeCal',page:'hor',dataPage:'hor'},
+  {key:'energia',label:'Consumo de Energia',desc:'kWh estimados a partir da irrigação executada',group:'Indicadores',icon:'trending',page:'energia',dataPage:'energia'},
 
   // Cadastros — 6 mais usados + "Outros" (as 9 entidades restantes seguem
   // acessíveis pelo menu vertical da própria tela de Cadastros)
@@ -726,6 +727,18 @@ function showVersoesModal(titulo,itens){
       </div>
     </div>`;
   }).join('')}</div>`:'<div class="empty-state-sub">Sem histórico de versões.</div>';
+  document.getElementById('versoes-modal-overlay').classList.add('open');
+}
+
+/* Mesmo modal genérico acima, para conteúdo HTML livre (ex.: memória de
+   cálculo do Consumo de Energia) — evita criar um segundo componente de
+   modal só para isso. */
+function showInfoModal(titulo,html){
+  const title=document.getElementById('versoes-modal-title');
+  const body=document.getElementById('versoes-modal-body');
+  if(!title||!body) return;
+  title.textContent=titulo;
+  body.innerHTML=html;
   document.getElementById('versoes-modal-overlay').classList.add('open');
 }
 function closeVersoesModal(){
