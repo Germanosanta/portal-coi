@@ -6,6 +6,20 @@
 
 create extension if not exists pgcrypto;
 
+-- ── SCHEMA `coi` ───────────────────────────────────────────────────
+-- BUG CORRIGIDO (auditoria de 19/08/2026): esta migration criava as
+-- tabelas sem qualificar schema, então elas nasciam em `public` — mas
+-- TODO o código do app (js/services/horimetro.js e demais) lê/grava em
+-- `window.coiDB.schema('coi')`. Resultado real, confirmado via consulta
+-- direta à API REST do projeto: as tabelas nunca existiram em `coi`
+-- (erro PGRST205 em toda tabela testada). Corrigido criando o schema
+-- explicitamente e apontando o search_path desta sessão de SQL para
+-- ele — nada muda para quem já tinha rodado a versão antiga apontando
+-- para `public`, pois os `create table if not exists` abaixo, agora
+-- com o search_path em `coi`, criam do zero lá.
+create schema if not exists coi;
+set search_path to coi, public;
+
 -- ── PIVÔS (mínimo necessário para o Horímetro funcionar; o cadastro
 --    completo de fazenda/casa de bomba/status vem numa etapa própria de
 --    Cadastros, não inventado aqui) ────────────────────────────────────
@@ -49,6 +63,17 @@ create index if not exists idx_horimetro_pivo_atual
   on horimetro_lancamentos (pivo_id, atual, status);
 create index if not exists idx_horimetro_grupo
   on horimetro_lancamentos (grupo_id);
+
+-- Correção de consistência (auditoria 19/08/2026): impede, a nível de
+-- banco, que um mesmo grupo_id tenha duas versões marcadas atual=true
+-- ao mesmo tempo — antes disso dependia só da ordem de UPDATE/INSERT em
+-- horimetroAtualizar() no JS; se o INSERT da nova versão falhasse depois
+-- do UPDATE já ter marcado a antiga como atual=false, o código já
+-- reverte isso manualmente (ver horimetro.js), mas esta constraint é a
+-- garantia definitiva contra qualquer outra via de escrita (SQL Editor,
+-- outra rotina) deixar dois "atuais" no mesmo grupo.
+create unique index if not exists uq_horimetro_grupo_atual
+  on horimetro_lancamentos (grupo_id) where atual = true;
 
 -- Impede duplicar o MESMO registro histórico se a importação for rodada
 -- de novo (idempotência exigida) — só vale para a carga original.
@@ -117,3 +142,16 @@ create policy pivos_anon_all on pivos for all
 drop policy if exists horimetro_anon_all on horimetro_lancamentos;
 create policy horimetro_anon_all on horimetro_lancamentos for all
   using (true) with check (true);
+
+-- ── GRANTS — obrigatório para schema fora de `public`: o PostgREST só
+--    enxerga um schema custom se (a) o role usado pela API key tiver
+--    USAGE nele e SELECT/INSERT/UPDATE/DELETE nas tabelas, e (b) o
+--    schema estiver na lista "Exposed schemas" do projeto (AÇÃO MANUAL,
+--    não dá para fazer por SQL: Dashboard → Project Settings → API →
+--    "Exposed schemas" → adicionar `coi` e salvar). Sem isso, mesmo com
+--    RLS e policy corretas, a API responde 404/PGRST205 igual a uma
+--    tabela inexistente.
+grant usage on schema coi to anon, authenticated;
+grant select, insert, update, delete on all tables in schema coi to anon, authenticated;
+alter default privileges in schema coi
+  grant select, insert, update, delete on tables to anon, authenticated;

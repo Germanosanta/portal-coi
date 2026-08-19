@@ -6,6 +6,9 @@
 
 create extension if not exists pgcrypto;
 
+-- Correção (auditoria 19/08/2026): search_path para coi — ver 001_horimetro.sql.
+set search_path to coi, public;
+
 create table if not exists calibracoes_lancamentos (
   id uuid primary key default gen_random_uuid(),
   grupo_id uuid not null,
@@ -34,7 +37,15 @@ create index if not exists idx_calibracoes_pivo_atual
 create index if not exists idx_calibracoes_grupo
   on calibracoes_lancamentos (grupo_id);
 
+create unique index if not exists uq_calibracoes_grupo_atual
+  on calibracoes_lancamentos (grupo_id) where atual = true;
+
 alter table calibracoes_lancamentos enable row level security;
 drop policy if exists calibracoes_anon_all on calibracoes_lancamentos;
 create policy calibracoes_anon_all on calibracoes_lancamentos for all
   using (true) with check (true);
+
+grant usage on schema coi to anon, authenticated;
+grant select, insert, update, delete on all tables in schema coi to anon, authenticated;
+alter default privileges in schema coi
+  grant select, insert, update, delete on tables to anon, authenticated;

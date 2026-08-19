@@ -6,6 +6,9 @@
 
 create extension if not exists pgcrypto;
 
+-- Correção (auditoria 19/08/2026): search_path para coi — ver 001_horimetro.sql.
+set search_path to coi, public;
+
 -- ── Ficha técnica do conjunto motor-bomba por pivô ─────────────────
 -- Fonte: BASE DE DADOS/informações pivôs e reservatorios Elavatórias
 -- Captacões e Poços.xlsx, aba "Infor_Pivos". Um pivô = uma potência
@@ -86,3 +89,8 @@ drop policy if exists potencia_anon_all on pivos_potencia_tecnica;
 create policy potencia_anon_all on pivos_potencia_tecnica for all using (true) with check (true);
 drop policy if exists consumo_anon_all on consumo_energia_calculo;
 create policy consumo_anon_all on consumo_energia_calculo for all using (true) with check (true);
+
+grant usage on schema coi to anon, authenticated;
+grant select, insert, update, delete on all tables in schema coi to anon, authenticated;
+alter default privileges in schema coi
+  grant select, insert, update, delete on tables to anon, authenticated;

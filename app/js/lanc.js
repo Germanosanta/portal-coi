@@ -254,9 +254,23 @@ const lhm={
 
     const btn=document.getElementById('lhm-salvar-btn');
     const lbl=document.getElementById('lhm-salvar-lbl');
+    if(btn.disabled) return; // trava contra duplo clique (2º clique cai aqui e é ignorado)
     btn.disabled=true; lbl.textContent='Salvando...';
 
-    const resultado=this.editandoGrupoId ? await horimetroAtualizar(this.editandoGrupoId,dados) : await horimetroCriar(dados);
+    let resultado;
+    try{
+      resultado=this.editandoGrupoId ? await horimetroAtualizar(this.editandoGrupoId,dados) : await horimetroCriar(dados);
+    }catch(err){
+      // Correção (auditoria 19/08/2026): sem try/finally, uma exceção não
+      // tratada aqui (ex.: falha de rede antes mesmo de horimetroCriar/
+      // Atualizar responderem) deixava o botão travado em "Salvando..."
+      // para sempre — o usuário não conseguia tentar de novo sem recarregar
+      // a página.
+      console.error('[horimetro] salvar falhou:',err);
+      btn.disabled=false; lbl.textContent='Salvar Lançamento';
+      toast('Falha inesperada ao salvar. Tente novamente.','err');
+      return;
+    }
 
     if(resultado.dataFuturaPendente){
       btn.disabled=false; lbl.textContent='Salvar Lançamento';

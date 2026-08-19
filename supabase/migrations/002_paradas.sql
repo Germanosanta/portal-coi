@@ -7,6 +7,11 @@
 
 create extension if not exists pgcrypto;
 
+-- Correção (auditoria 19/08/2026): search_path para coi — mesma causa raiz
+-- documentada em 001_horimetro.sql (tabelas nasciam em `public`, código lê
+-- `.schema('coi')`). `pivos` já deve existir em `coi` (001 roda antes).
+set search_path to coi, public;
+
 create table if not exists paradas_lancamentos (
   id uuid primary key default gen_random_uuid(),
   grupo_id uuid not null,
@@ -33,6 +38,9 @@ create index if not exists idx_paradas_grupo
   on paradas_lancamentos (grupo_id);
 create index if not exists idx_paradas_data
   on paradas_lancamentos (data);
+
+create unique index if not exists uq_paradas_grupo_atual
+  on paradas_lancamentos (grupo_id) where atual = true;
 
 -- Idempotência da carga histórica (INTERVALO DE TEMPO-Paradas.xlsx):
 -- mesmo pivô+data+hora inicial+hora final nunca duplica.
@@ -79,3 +87,8 @@ alter table paradas_lancamentos enable row level security;
 drop policy if exists paradas_anon_all on paradas_lancamentos;
 create policy paradas_anon_all on paradas_lancamentos for all
   using (true) with check (true);
+
+grant usage on schema coi to anon, authenticated;
+grant select, insert, update, delete on all tables in schema coi to anon, authenticated;
+alter default privileges in schema coi
+  grant select, insert, update, delete on tables to anon, authenticated;
