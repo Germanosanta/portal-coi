@@ -12,6 +12,16 @@ na ordem numérica dos arquivos:
 5. `migrations/005_energia.sql` — tabelas `pivos_potencia_tecnica` (ficha técnica
    do motor-bomba por pivô) e `consumo_energia_calculo` (memória de cálculo,
    1 snapshot por lançamento de Horímetro)
+6. `migrations/006_fix_constraints_versionamento.sql` — índices únicos que
+   impedem duas versões `atual=true` no mesmo `grupo_id` (já rodada e
+   confirmada em 20/08/2026)
+7. `migrations/007_horimetro_natural_key_area_pivo.sql` — corrige a chave
+   natural de importação do Horímetro para incluir `area_pivo` (senão dois
+   lançamentos reais do mesmo pivô/dia com quadrante diferente seriam
+   tratados como duplicata) — rodar **antes** da 008
+8. `migrations/008_horimetro_karitel_rdm_migrate.sql` — migra a staging do
+   histórico Karitel/RDM para `horimetro_lancamentos` — rodar **depois** de
+   importar `seed/karitel_rdm_import.csv` na tabela `horimetro_staging`
 
 Todas são idempotentes (`create table if not exists`, `on conflict do nothing`)
 — rodar de novo não duplica nada.
