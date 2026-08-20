@@ -14,7 +14,29 @@
 
 set search_path to coi, public;
 
--- ── Passo 1: normaliza qualquer violação já existente ANTES de criar o
+-- ── PARTE 1 — DIAGNÓSTICO (rode e leia antes de seguir) ─────────────
+-- Só SELECT, nada é alterado aqui. Se todas as 4 consultas abaixo
+-- devolverem zero linhas, não há violação hoje e o Passo 2 (mais
+-- abaixo) não vai alterar nenhuma linha — só criará os índices.
+select grupo_id, count(*) from horimetro_lancamentos
+  where atual=true group by grupo_id having count(*)>1;
+select grupo_id, count(*) from paradas_lancamentos
+  where atual=true group by grupo_id having count(*)>1;
+select grupo_id, count(*) from calibracoes_lancamentos
+  where atual=true group by grupo_id having count(*)>1;
+select grupo_id, count(*) from planejamento_lancamentos
+  where atual=true group by grupo_id having count(*)>1;
+
+-- Índices já existentes hoje nestas 4 tabelas (para conferir o que a
+-- PARTE 2 abaixo ainda precisa criar — os uq_*_grupo_atual não devem
+-- aparecer aqui se a correção ainda não foi aplicada).
+select tablename, indexname, indexdef from pg_indexes
+  where schemaname='coi'
+    and tablename in ('horimetro_lancamentos','paradas_lancamentos','calibracoes_lancamentos','planejamento_lancamentos')
+  order by tablename, indexname;
+
+-- ── PARTE 2 — CORREÇÃO ───────────────────────────────────────────────
+-- Passo 1: normaliza qualquer violação já existente ANTES de criar o
 --    índice único (senão o CREATE UNIQUE INDEX falha) — para cada
 --    grupo_id com mais de uma linha atual=true, mantém atual=true só na
 --    versão mais alta e marca as demais como atual=false. Não apaga
