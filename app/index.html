@@ -696,9 +696,17 @@
                   </div>
                   <div class="field">
                     <label>Área do Pivô</label>
-                    <select class="select" id="lhm-area">
-                      <option value="COMPLETO">COMPLETO</option>
-                    </select>
+                    <input class="input" id="lhm-area" list="lhm-area-opts" value="COMPLETO" autocomplete="off">
+                    <datalist id="lhm-area-opts">
+                      <option value="COMPLETO"></option>
+                      <option value="A"></option>
+                      <option value="B"></option>
+                      <option value="C"></option>
+                      <option value="D"></option>
+                      <option value="A+B"></option>
+                      <option value="C+D"></option>
+                      <option value="A+B+C+D"></option>
+                    </datalist>
                   </div>
                   <div class="field">
                     <label>Operador Responsável</label>
@@ -1878,6 +1886,9 @@
 <script src="js/audit.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/filters.js"></script>
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config/supabase.js"></script>
 <script src="js/services/calculos.js"></script>
 <script src="js/services/validacoes.js"></script>
 <script src="js/cadastro.js"></script>
@@ -1905,10 +1916,6 @@
 <script src="js/nav.js"></script>
 <script src="js/export.js"></script>
 <script src="js/data-loader.js"></script>
-
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config/supabase.js"></script>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
