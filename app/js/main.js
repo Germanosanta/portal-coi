@@ -25,6 +25,20 @@ function initApp(){
   setInterval(updateClock,30000);
   checkResponsive();
   window.addEventListener('resize',checkResponsive);
+  registrarServiceWorker();
+}
+
+/* PWA — registra o service worker do app shell (sw.js). Falha aqui NUNCA
+   bloqueia o boot do app: navegador sem suporte, ou o próprio registro
+   falhando, só significa "sem instalação/cache offline", nunca "app não
+   funciona". */
+function registrarServiceWorker(){
+  if(!('serviceWorker' in navigator)) return;
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(err=>{
+      console.warn('[pwa] falha ao registrar service worker:',err);
+    });
+  });
 }
 
 let DATA_LOADED_AT=null;

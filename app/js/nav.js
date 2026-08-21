@@ -580,7 +580,7 @@ async function adminEditarPerfilUsuario(id){
   if(bloquearSemPermissao('usuarios','edit')) return;
   const u=usuariosTodos().find(x=>x.id===id);
   if(!u) return;
-  const nomes=perfisTodos().map(p=>p.nome);
+  const nomes=perfisTodos().filter(p=>p.ativo).map(p=>p.nome);
   const novo=prompt(`Perfil de ${u.nome} (${nomes.join(' / ')}):`,u.perfil||'');
   if(novo===null) return;
   const perfil=perfilPorNome(novo.trim());
@@ -616,7 +616,9 @@ function renderAdminPerfis(){
   const tabsEl=document.getElementById('admin-perfis-tabs');
   const matrizEl=document.getElementById('admin-perfis-matriz');
   if(!tabsEl||!matrizEl) return;
-  const perfis=perfisTodos();
+  /* Perfis inativos (ex.: legado pré-Fase-16) não aparecem pra seleção —
+     ficam só no banco por preservação de histórico, nunca utilizáveis. */
+  const perfis=perfisTodos().filter(p=>p.ativo);
   if(!perfis.length){ matrizEl.innerHTML=emEl('Carregando perfis...'); return; }
   if(!_adminPerfilSelecionado||!perfis.find(p=>p.id===_adminPerfilSelecionado)) _adminPerfilSelecionado=perfis[0].id;
 
