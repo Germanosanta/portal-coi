@@ -42,6 +42,12 @@ async function bootApp(){
   if(typeof calibracaoSyncCache==='function') await calibracaoSyncCache();
   if(typeof planejamentoSyncCache==='function') await planejamentoSyncCache();
   if(typeof energiaSyncCache==='function') await energiaSyncCache();
+  /* Fase 16 — Usuários/Perfis/Permissões: permissoes ANTES de usuarios
+     (usuarioRegistrarAcesso, chamado por login.js logo depois, precisa
+     de _perfisCache já carregado pra resolver o perfil "Administrador"/
+     "Operador/Lançador" do primeiro acesso). */
+  if(typeof permissoesSyncCache==='function') await permissoesSyncCache();
+  if(typeof usuariosSyncCache==='function') await usuariosSyncCache();
   iniciarSincronizacaoPeriodica();
   buildSelects();
   atuSB();
@@ -78,6 +84,8 @@ function iniciarSincronizacaoPeriodica(){
     const okC=typeof calibracaoSyncCache==='function'?await calibracaoSyncCache():true;
     const okPl=typeof planejamentoSyncCache==='function'?await planejamentoSyncCache():true;
     if(typeof energiaSyncCache==='function') await energiaSyncCache();
+    if(typeof permissoesSyncCache==='function') await permissoesSyncCache();
+    if(typeof usuariosSyncCache==='function') await usuariosSyncCache();
     /* Não força goPage() em 'lanc'/'cad': são telas de formulário com
        abas e digitação em andamento — trocar de aba/perder o formulário
        a cada 30min seria pior que os dados ficarem 30min "velhos" até a

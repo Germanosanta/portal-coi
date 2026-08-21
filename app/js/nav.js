@@ -368,18 +368,31 @@ function sbItemHtml(m,compact){
    realmente mostra. */
 let SB_ADMIN_FOCO=null;
 
+/* Fase 16 — Camada 1 (menu): os 4 itens administrativos "de verdade"
+   (os demais itens do grupo Administração continuam visíveis pra todo
+   mundo, como sempre — Configurações é preferência pessoal, Backup/
+   Sincronização são só card de estrutura preparada, sem ação real).
+   Sem permissão pra um desses 4, o item some da sidebar (não fica
+   "acinzentado" — a Camada 2/tela já cobre quem tentar entrar direto
+   pela URL/atalho mesmo assim). */
+const SB_ITENS_ADMIN_RESTRITOS={usuarios:'usuarios',perfis:'perfis',permissoes:'permissoes',auditoriaAdmin:'auditoria'};
+function sbItemVisivel(m){
+  const modulo=SB_ITENS_ADMIN_RESTRITOS[m.key];
+  return !modulo||podeVisualizar(modulo);
+}
+
 function renderSidebarNav(){
   const nav=document.getElementById('sb-nav');
   if(!nav) return;
   const activeKey=resolveActiveKey();
   const activeMod=activeKey&&SB_MODULES.find(m=>m.key===activeKey);
   const group=(activeMod&&activeMod.group)||SB_GROUP_ORDER[0];
-  const mods=SB_MODULES.filter(m=>m.group===group);
+  const mods=SB_MODULES.filter(m=>m.group===group&&sbItemVisivel(m));
 
   let html=`<div class="nav-section-label">${group}</div>`;
   html+=mods.map(m=>sbItemHtml(m,false)).join('');
 
-  const favs=sbFavoritos().map(k=>SB_MODULES.find(m=>m.key===k)).filter(Boolean).filter(m=>m.group!==group);
+  const favs=sbFavoritos().map(k=>SB_MODULES.find(m=>m.key===k)).filter(Boolean).filter(m=>m.group!==group&&sbItemVisivel(m));
   if(favs.length){
     html+=`<div class="nav-sep"></div><div class="nav-section-label">★ Favoritos</div>`;
     html+=favs.map(m=>sbItemHtml(m,true)).join('');
@@ -399,7 +412,14 @@ function sbNavigate(key,btn){
 
 /* Atalho usado pelos cartões "estrutura preparada" de Administração —
    mesma navegação de sbNavigate, só chamada fora da sidebar. */
-function sbAdminFoco(key){ SB_ADMIN_FOCO=key; if(typeof renderAdmin==='function') renderAdmin(); }
+function sbAdminFoco(key){
+  SB_ADMIN_FOCO=key;
+  if(typeof renderAdmin==='function') renderAdmin();
+  if(key==='perfis'||key==='permissoes'){
+    const el=document.getElementById('admin-perfis-card');
+    if(el) setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),0);
+  }
+}
 
 /* Cartões de "estrutura preparada" — cada um documenta onde a peça do
    Firebase vai entrar, sem implementar nada (ver ROADMAP.md v4.0). */
@@ -415,12 +435,13 @@ function renderAdmin(){
   if(conteudo) conteudo.style.display='';
 
   renderAdminUsuariosTabela();
+  renderAdminPerfis();
   renderAdminAuditoria();
   renderAdminAuditoriaNegocio();
 
   const box=document.getElementById('admin-cards');
   if(!box) return;
-  const items=SB_MODULES.filter(m=>m.group==='Administração'&&m.key!=='usuarios'&&m.key!=='auditoriaAdmin');
+  const items=SB_MODULES.filter(m=>m.group==='Administração'&&!['usuarios','auditoriaAdmin','perfis','permissoes'].includes(m.key));
   /* Integrações não é mais item de sidebar (Fase 10.1 simplificou o
      submenu de Administração para 4 itens) — mas o cartão continua
      documentado aqui, já que a funcionalidade nunca existiu de fato
@@ -541,7 +562,7 @@ function renderAdminUsuariosTabela(){
    padrão de bloqueio (bloquearSemPermissao) usada em Lançamentos e
    Cadastros. Cada ação bem-sucedida também vira um evento em
    services/auditoria.js ("alteração de usuários/permissões"). */
-function adminEditarUsuario(id){
+async function adminEditarUsuario(id){
   if(bloquearSemPermissao('usuarios','edit')) return;
   const u=usuariosTodos().find(x=>x.id===id);
   if(!u) return;
@@ -549,31 +570,94 @@ function adminEditarUsuario(id){
   if(nome===null) return;
   const cargo=prompt('Cargo:',u.cargo||'');
   if(cargo===null) return;
-  usuarioAtualizar(id,{nome:nome.trim()||u.nome,cargo:cargo.trim()});
+  const r=await usuarioAtualizar(id,{nome:nome.trim()||u.nome,cargo:cargo.trim()});
+  if(!r.ok){ toast(r.erros[0],'err'); return; }
   auditoriaRegistrar('ALTERAÇÃO','Usuários',u.login,`Dados atualizados (nome/cargo).`);
   toast('Usuário atualizado.','ok');
   renderAdminUsuariosTabela();
 }
-function adminEditarPerfilUsuario(id){
+async function adminEditarPerfilUsuario(id){
   if(bloquearSemPermissao('usuarios','edit')) return;
   const u=usuariosTodos().find(x=>x.id===id);
   if(!u) return;
-  const novo=prompt(`Perfil de ${u.nome} (${PERFIS_DISPONIVEIS.join(' / ')}):`,u.perfil);
+  const nomes=perfisTodos().map(p=>p.nome);
+  const novo=prompt(`Perfil de ${u.nome} (${nomes.join(' / ')}):`,u.perfil||'');
   if(novo===null) return;
-  if(!PERFIS_DISPONIVEIS.includes(novo)){ toast('Perfil inválido. Use: '+PERFIS_DISPONIVEIS.join(', '),'err'); return; }
-  usuarioAtualizar(id,{perfil:novo});
-  auditoriaRegistrar('ALTERAÇÃO','Permissões',u.login,`Perfil alterado para ${novo}.`);
+  const perfil=perfilPorNome(novo.trim());
+  if(!perfil){ toast('Perfil inválido. Use: '+nomes.join(', '),'err'); return; }
+  const perfilAnterior=u.perfil||'—';
+  const r=await usuarioAtualizar(id,{perfilId:perfil.id});
+  if(!r.ok){ toast(r.erros[0],'err'); return; }
+  auditoriaRegistrar('ALTERAÇÃO','Permissões',u.login,`Perfil alterado de ${perfilAnterior} para ${perfil.nome}.`);
   toast('Perfil atualizado.','ok');
   renderAdminUsuariosTabela();
 }
-function adminAlternarStatusUsuario(id){
+async function adminAlternarStatusUsuario(id){
   if(bloquearSemPermissao('usuarios','edit')) return;
   const u=usuariosTodos().find(x=>x.id===id);
   if(!u) return;
-  usuarioAlternarStatus(id);
-  const novoStatus=u.status==='Ativo'?'Inativo':'Ativo';
+  const r=await usuarioAlternarStatus(id);
+  if(!r.ok){ toast(r.erros[0],'err'); return; }
+  const novoStatus=u.status==='Ativo'?'Bloqueado':'Ativo';
   auditoriaRegistrar('ALTERAÇÃO','Usuários',u.login,`Status alterado para ${novoStatus}.`);
+  toast(novoStatus==='Bloqueado'?'Usuário bloqueado.':'Usuário desbloqueado.','ok');
   renderAdminUsuariosTabela();
+}
+
+/* ── PERFIS E PERMISSÕES (Fase 16) ────────────────────────────────────
+   Seletor de perfil (abas) + matriz de checkboxes agrupada por módulo,
+   a partir de services/permissoes.js (perfisTodos/catalogoPermissoes/
+   permissoesDoPerfil). Cada clique grava 1 linha em coi.perfil_permissoes
+   (permissaoDefinir) e registra em auditoria — nunca escreve nada em
+   lote/silenciosamente. */
+let _adminPerfilSelecionado=null;
+
+function renderAdminPerfis(){
+  const tabsEl=document.getElementById('admin-perfis-tabs');
+  const matrizEl=document.getElementById('admin-perfis-matriz');
+  if(!tabsEl||!matrizEl) return;
+  const perfis=perfisTodos();
+  if(!perfis.length){ matrizEl.innerHTML=emEl('Carregando perfis...'); return; }
+  if(!_adminPerfilSelecionado||!perfis.find(p=>p.id===_adminPerfilSelecionado)) _adminPerfilSelecionado=perfis[0].id;
+
+  tabsEl.innerHTML=perfis.map(p=>`<button class="btn ${p.id===_adminPerfilSelecionado?'btn-primary':'btn-secondary'} btn-xs" onclick="adminSelecionarPerfil('${p.id}')">${p.nome}</button>`).join('');
+
+  const podeEditarPermissoes=canEdit('permissoes');
+  const permitidas=permissoesDoPerfil(_adminPerfilSelecionado);
+  const porModulo={};
+  catalogoPermissoes().forEach(c=>{ (porModulo[c.modulo]=porModulo[c.modulo]||[]).push(c); });
+  const ROTULO_MODULO={
+    operacao:'Operação',lancamentos:'Lançamentos',indicadores:'Indicadores',relatorios:'Relatórios',
+    cadastros:'Cadastros',usuarios:'Usuários',perfis:'Perfis',permissoes:'Permissões',auditoria:'Auditoria',
+    administracao:'Administração (acesso à área)',
+    horimetro:'Horímetro (preparado)',paradas:'Paradas (preparado)',potencia:'Potência dos Pivôs (preparado)',
+    planejamento:'Planejamento (preparado)',calibracao:'Calibração (preparado)',energia:'Energia (preparado)',
+  };
+  const perfilAtual=perfis.find(p=>p.id===_adminPerfilSelecionado);
+  matrizEl.innerHTML=`<div style="font-size:12px;color:var(--text-tertiary);margin-bottom:.6rem">PERFIL: <strong style="color:var(--text-primary)">${perfilAtual.nome.toUpperCase()}</strong>${perfilAtual.base?' <span class="badge b-neutral" style="font-size:9px">perfil-base</span>':''}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.75rem">
+    ${Object.keys(porModulo).map(mod=>`
+      <div style="border:1px solid var(--border-subtle);border-radius:8px;padding:.6rem .75rem">
+        <div style="font-weight:600;font-size:12px;margin-bottom:.35rem">${ROTULO_MODULO[mod]||mod}</div>
+        ${porModulo[mod].map(c=>`
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:12px;padding:.15rem 0;${podeEditarPermissoes?'cursor:pointer':'opacity:.6'}">
+            <input type="checkbox" ${permitidas.has(c.chave)?'checked':''} ${podeEditarPermissoes?'':'disabled'}
+              onchange="adminPerfilTogglePermissao('${c.chave}',this.checked)">
+            ${c.label}
+          </label>`).join('')}
+      </div>`).join('')}
+    </div>`;
+}
+function adminSelecionarPerfil(perfilId){ _adminPerfilSelecionado=perfilId; renderAdminPerfis(); }
+async function adminPerfilTogglePermissao(chave,permitido){
+  if(bloquearSemPermissao('permissoes','edit')) { renderAdminPerfis(); return; }
+  const perfil=perfisTodos().find(p=>p.id===_adminPerfilSelecionado);
+  if(!perfil) return;
+  const r=await permissaoDefinir(_adminPerfilSelecionado,chave,permitido);
+  if(!r.ok){ toast(r.erros[0],'err'); renderAdminPerfis(); return; }
+  auditoriaRegistrar('ALTERAÇÃO','Permissões',perfil.nome,`${permitido?'Liberou':'Bloqueou'} "${chave}" para o perfil ${perfil.nome}.`);
+  toast(permitido?`Liberado: ${chave}`:`Bloqueado: ${chave}`,'ok');
+  renderAdminPerfis();
 }
 
 /* Deriva qual item da sidebar corresponde à página/aba atual — não altera

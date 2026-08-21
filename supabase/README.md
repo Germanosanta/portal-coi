@@ -22,6 +22,15 @@ na ordem numérica dos arquivos:
 8. `migrations/008_horimetro_karitel_rdm_migrate.sql` — migra a staging do
    histórico Karitel/RDM para `horimetro_lancamentos` — rodar **depois** de
    importar `seed/karitel_rdm_import.csv` na tabela `horimetro_staging`
+9. `migrations/009_usuarios_perfis_permissoes.sql` — Usuários/Perfis/
+   Permissões. **Achado importante ao auditar antes de escrever**: `coi.perfis`
+   e `coi.usuarios` **já existiam** no projeto (0 linhas, RLS habilitado com
+   policy que rejeitava a chave anon). A migration reaproveita as duas
+   (`alter table ... add column if not exists` — nunca recria) e só cria do
+   zero o que não existia: `permissoes_catalogo` (chaves `modulo.acao`) e
+   `perfil_permissoes` (matriz perfil×permissão). Seed dos 5 perfis-base
+   (Administrador/Coordenador/Supervisor/Operador-Lançador/Consulta) e dos
+   defaults de cada um.
 
 Todas são idempotentes (`create table if not exists`, `on conflict do nothing`)
 — rodar de novo não duplica nada.

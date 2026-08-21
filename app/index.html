@@ -1736,13 +1736,13 @@
       </div>
       <div class="alert alert-danger" id="admin-bloqueado" style="display:none;margin-bottom:1rem">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <div><div class="alert-title">Acesso restrito</div>Esta área é exclusiva do perfil Administrador. Usuário sem permissão para executar esta ação.</div>
+        <div><div class="alert-title">Acesso não autorizado</div>Você não possui permissão para acessar esta funcionalidade.</div>
       </div>
 
       <div id="admin-conteudo">
         <div class="alert alert-info" style="margin-bottom:1rem">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <div><div class="alert-title">Aguardando integração com Firebase</div>Usuários e Configurações já funcionam hoje (armazenamento local). Perfis/Permissões/Backup/Sincronização/Integrações documentam onde a peça do Firebase vai entrar — nenhum bloqueia módulo nenhum ainda.</div>
+          <div><div class="alert-title">Usuários, Perfis e Permissões</div>Persistidos no Supabase (schema <code>coi</code>) — 5 perfis-base (Administrador/Coordenador/Supervisor/Operador-Lançador/Consulta), matriz de permissões editável abaixo. Backup/Sincronização/Integrações continuam sendo estrutura preparada (ver ROADMAP.md).</div>
         </div>
 
         <div class="card" style="margin-bottom:1rem">
@@ -1751,6 +1751,20 @@
             <span id="admin-usuarios-cnt" style="font-size:10px;color:var(--text-tertiary)"></span>
           </div>
           <div class="table-wrap" id="admin-usuarios-tbl"></div>
+        </div>
+
+        <!-- Fase 16 — Perfis e Permissões: seletor de perfil + matriz de
+             checkboxes (modulo x acao), gravando em coi.perfil_permissoes.
+             PERFIL e PERMISSÃO são independentes: liberar/bloquear uma
+             chave aqui não cria perfil novo. -->
+        <div class="card" style="margin-bottom:1rem" id="admin-perfis-card">
+          <div class="card-header">
+            <div class="card-title">Perfis e Permissões</div>
+          </div>
+          <div class="card-body">
+            <div class="filter-bar" style="margin-bottom:.75rem" id="admin-perfis-tabs"></div>
+            <div id="admin-perfis-matriz"></div>
+          </div>
         </div>
 
         <!-- Ponto 8 — Auditoria como módulo independente: as DUAS trilhas

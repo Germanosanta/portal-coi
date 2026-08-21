@@ -17,7 +17,19 @@ function checkLoginState(){
   }
   if(localStorage.getItem('coi_logged_in')==='1'){
     showApp();
-    bootApp();
+    bootApp().then(()=>{
+      /* Fase 16 — sessão restaurada (F5/reabrir aba): se o usuário foi
+         bloqueado por um administrador enquanto a sessão local ainda
+         dizia "logado", derruba a sessão agora que o perfil já foi
+         sincronizado do banco. */
+      const login=localStorage.getItem('coi_user')||'';
+      const u=typeof usuarioPorLogin==='function'?usuarioPorLogin(login):null;
+      if(u&&u.status==='Bloqueado'){
+        localStorage.removeItem('coi_logged_in');
+        localStorage.removeItem('coi_user');
+        location.reload();
+      }
+    });
   }
 }
 
@@ -61,9 +73,19 @@ function doLogin(ev){
   btn.disabled=true; lbl.textContent='Entrando...';
   document.getElementById('login-loading').classList.add('show');
 
-  bootApp().then(()=>{
-    if(typeof usuarioRegistrarAcesso==='function') usuarioRegistrarAcesso(usuario,usuario);
+  bootApp().then(async()=>{
+    if(typeof usuarioRegistrarAcesso==='function') await usuarioRegistrarAcesso(usuario,usuario);
+    /* Fase 16 — usuário BLOQUEADO não pode usar o sistema: barra aqui,
+       depois do registro de acesso (para o último-acesso ficar
+       correto), antes de liberar a tela. */
+    const uReg=typeof usuarioPorLogin==='function'?usuarioPorLogin(usuario):null;
+    if(uReg&&uReg.status==='Bloqueado'){
+      loginMostrarErro('Usuário bloqueado. Procure o administrador do sistema.');
+      localStorage.removeItem('coi_logged_in');
+      return;
+    }
     if(typeof auditoriaRegistrar==='function') auditoriaRegistrar('LOGIN','Acesso',usuario,'Login realizado no portal.');
+    if(typeof renderSidebarNav==='function') renderSidebarNav();
     showApp();
   }).finally(()=>{
     btn.disabled=false; lbl.textContent='Entrar';
