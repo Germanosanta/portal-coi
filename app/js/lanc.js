@@ -38,13 +38,24 @@ const lhm={
   novo(){ this.tabNav('lanc'); this.limpar(); },
   cancelar(){ this.limpar(); toast('Lançamento cancelado.','info'); },
 
+  /* Hora do registro: só exibição (não é um campo do formulário) — a
+     hora de verdade gravada no lançamento é sempre a do momento do
+     Salvar (ver salvar()), nunca a mostrada aqui em tela parada. Não
+     confundir com "Data da OS", que o operador escolhe manualmente e
+     pode ser de outro dia. */
+  atualizarHoraAuto(){
+    const el=document.getElementById('lhm-hora-auto');
+    if(el) el.textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  },
+
   /* ── FORMULÁRIO: RESET COMPLETO ───────────────────────────────── */
   limpar(){
     this.editandoGrupoId=null;
-    ['lhm-faz','lhm-pivo','lhm-cult','lhm-safra','lhm-oper','lhm-h1','lhm-h2','lhm-hora','lhm-pct','lhm-lam','lhm-pres','lhm-hoc','lhm-obs']
+    ['lhm-faz','lhm-pivo','lhm-cult','lhm-safra','lhm-oper','lhm-h1','lhm-h2','lhm-pct','lhm-lam','lhm-obs']
       .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
     document.getElementById('lhm-area').value='COMPLETO';
     document.getElementById('lhm-data').value=today();
+    this.atualizarHoraAuto();
 
     const pivoSel=document.getElementById('lhm-pivo');
     pivoSel.innerHTML='<option value="">Selecione a fazenda</option>'; pivoSel.disabled=true;
@@ -244,10 +255,20 @@ const lhm={
      de validação/exibição mudou. */
   async salvar(dataFuturaAutorizada){
     if(bloquearSemPermissao('lancamentos','edit')) return;
+    /* "Data da OS" (campo lhm-data) é sempre a que o operador escolheu —
+       nunca é substituída pela data de hoje. A hora, ao contrário, NUNCA
+       é digitada: é lida do relógio do sistema no exato momento do
+       Salvar (não na abertura da tela, não em limpar()/atualizarHoraAuto,
+       que só atualizam o mostrador). `criado_em` (default do banco,
+       coi.horimetro_lancamentos) continua sendo o registro automático e
+       definitivo de quando a linha foi de fato gravada — hora_inicio
+       aqui é só a versão "amigável" (HH:MM) da mesma hora, para exibir
+       na tela/histórico sem precisar formatar um timestamptz toda vez. */
+    const horaDoRegistro=new Date().toTimeString().slice(0,5);
     const dados={
-      pivoId:v('lhm-pivo'), data:v('lhm-data'), horaInicio:v('lhm-hora'),
+      pivoId:v('lhm-pivo'), data:v('lhm-data'), horaInicio:horaDoRegistro,
       horimetroInicial:v('lhm-h1'), horimetroFinal:v('lhm-h2'), percentual:v('lhm-pct'),
-      pressao:v('lhm-pres'), horasOciosas:v('lhm-hoc'), cultura:v('lhm-cult'),
+      cultura:v('lhm-cult'),
       areaPivo:v('lhm-area'), operador:v('lhm-oper'), observacao:v('lhm-obs'), safra:v('lhm-safra'),
       dataFuturaAutorizada:!!dataFuturaAutorizada,
     };
@@ -295,13 +316,14 @@ const lhm={
 
   limparCamposAposSalvar(){
     // Mantém Fazenda/Pivô (fluxo comum: vários lançamentos seguidos no mesmo pivô)
-    ['lhm-h2','lhm-pres','lhm-hoc','lhm-obs'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    ['lhm-h2','lhm-obs'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
     document.getElementById('lhm-pct').value='';
     document.getElementById('lhm-lam').value='';
     document.getElementById('lhm-pct-bar-wrap').style.display='none';
     document.getElementById('lhm-horas-display').textContent='—';
     const badge=document.getElementById('lhm-horas-badge');
     badge.textContent='Informe os horímetros'; badge.className='badge b-neutral';
+    this.atualizarHoraAuto();
     this.onPivo();
   },
 
@@ -337,7 +359,7 @@ const lhm={
     document.getElementById('lhm-area').value=reg.areaPivo||'COMPLETO';
     document.getElementById('lhm-oper').value=reg.operador||'';
     document.getElementById('lhm-data').value=reg.data;
-    document.getElementById('lhm-hora').value=reg.horaInicio||'';
+    this.atualizarHoraAuto();
 
     const h1=document.getElementById('lhm-h1');
     h1.value=reg.horimetroInicial; h1.readOnly=false;
@@ -345,8 +367,6 @@ const lhm={
     document.getElementById('lhm-h1-autolbl').textContent='';
     document.getElementById('lhm-h2').value=reg.horimetroFinal;
     document.getElementById('lhm-pct').value=reg.percentual;
-    document.getElementById('lhm-pres').value=reg.pressao??'';
-    document.getElementById('lhm-hoc').value=reg.horasOciosas??'';
     document.getElementById('lhm-obs').value=reg.observacao||'';
     this.calc();
     document.getElementById('lhm-salvar-lbl').textContent='Salvar Alteração';
