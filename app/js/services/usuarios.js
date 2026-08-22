@@ -49,29 +49,35 @@ const usuariosTodos = () => _usuariosCache;
 function usuarioPorLogin(login){ return usuariosTodos().find(u=>u.login===login)||null; }
 function usuarioPorId(id){ return usuariosTodos().find(u=>u.id===id)||null; }
 
-/* Chamado por js/login.js a cada entrada bem-sucedida. Cria o registro
-   na primeira vez (perfil Administrador se for o primeiro usuário já
-   cadastrado no banco, Operador/Lançador nas demais) ou só atualiza
-   último acesso/fazenda se já existir. */
-async function usuarioRegistrarAcesso(nome,login){
+/* Fase 17 — chamado por js/login.js logo após um SIGNIN real (Supabase
+   Auth). `authUser` é o objeto de auth.users (id, email) retornado pela
+   sessão — coi.usuarios.id é OBRIGATORIAMENTE o mesmo id (FK real no
+   banco, ver migration 009), nunca um id gerado à parte. Cria o
+   registro na primeira vez que esse auth.users loga (perfil
+   Administrador se for o primeiro usuário já cadastrado no banco,
+   Operador/Lançador nas demais) ou só atualiza último acesso/fazenda se
+   já existir. */
+async function usuarioSincronizarSessao(authUser){
+  if(!authUser||!authUser.id) return null;
   const fazendaId=localStorage.getItem('coi_fazenda_ativa')||null;
-  const existente=usuarioPorLogin(login);
+  const existente=usuarioPorId(authUser.id);
   if(existente){
     const {error}=await window.coiDB.schema('coi').from('usuarios').update({
-      nome, fazenda_id:fazendaId||null, ultimo_acesso:new Date().toISOString(),
-    }).eq('id',existente.id);
-    if(error){ console.error('[usuarios] falha ao atualizar acesso:',error); return; }
+      fazenda_id:fazendaId||null, ultimo_acesso:new Date().toISOString(),
+    }).eq('id',authUser.id);
+    if(error){ console.error('[usuarios] falha ao atualizar acesso:',error); return existente; }
   }else{
     const perfilNome=usuariosTodos().length===0?'Administrador':'Operador/Lançador';
     const perfil=_perfisCache.find(p=>p.nome===perfilNome);
     const {error}=await window.coiDB.schema('coi').from('usuarios').insert({
-      nome, login, cargo:localStorage.getItem('coi_user_cargo')||'Operador de Campo',
-      fazenda_id:fazendaId||null, perfil_id:perfil?perfil.id:null,
+      id:authUser.id, nome:(authUser.email||'').split('@')[0], email:authUser.email,
+      cargo:'Operador de Campo', fazenda_id:fazendaId||null, perfil_id:perfil?perfil.id:null,
       ativo:true, ultimo_acesso:new Date().toISOString(),
     });
-    if(error){ console.error('[usuarios] falha ao registrar acesso:',error); return; }
+    if(error){ console.error('[usuarios] falha ao criar registro de usuário:',error); return null; }
   }
   await usuariosSyncCache();
+  return usuarioPorId(authUser.id);
 }
 
 async function usuarioAtualizar(id,dados){
@@ -94,9 +100,21 @@ async function usuarioAlternarStatus(id){
   return usuarioAtualizar(id,{status:u.status==='Ativo'?'Bloqueado':'Ativo'});
 }
 
-/* Usuário da sessão atual (mesma chave coi_user do topbar/login) —
-   usado por services/permissoes.js para resolver o perfil/permissões. */
+/* Usuário da sessão atual — Fase 17: resolvido pelo id real da sessão
+   Supabase Auth (`_authUserId`, mantido em memória por js/login.js via
+   onAuthStateChange), não mais por um nome guardado em localStorage.
+   Usado por services/permissoes.js para resolver perfil/permissões. */
 function usuarioAtual(){
-  const login=localStorage.getItem('coi_user')||'';
-  return usuarioPorLogin(login);
+  if(typeof _authUserId==='undefined'||!_authUserId) return null;
+  return usuarioPorId(_authUserId);
+}
+
+/* Fase 17 — nome do usuário logado, pra qualquer trilha de auditoria
+   estampar quem fez o quê. Substitui os antigos localStorage.getItem
+   ('coi_user') espalhados em audit.js/services/auditoria.js/dashboard.js
+   — agora só existe UMA fonte de identidade (a sessão Supabase Auth
+   real), nunca mais um nome solto sem dono. */
+function usuarioAtualNome(){
+  const u=usuarioAtual();
+  return u?(u.nome||u.login||'Operador Local'):'Operador Local';
 }

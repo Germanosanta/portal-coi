@@ -28,7 +28,7 @@ function auditLog(tela,operacao,detalhe,meta){
   list.unshift({
     data:today(),
     hora:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
-    usuario:localStorage.getItem('coi_user')||'Operador Local',
+    usuario:typeof usuarioAtualNome==='function'?usuarioAtualNome():'Operador Local',
     tela, operacao, detalhe:detalhe||'',
     registro:m.registro||'', valorAnterior:m.valorAnterior??'', valorNovo:m.valorNovo??'',
   });

@@ -45,7 +45,7 @@ function renderExecHero(){
   const h=new Date().getHours();
   const saud=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
   const u=typeof usuarioAtual==='function'?usuarioAtual():null;
-  const nome=u?.nome||localStorage.getItem('coi_user')||'Operador Local';
+  const nome=u?.nome||'Operador Local';
   el.innerHTML=`
     <svg class="hero-watermark icon-pivot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.2"/><path d="M12 12 4 6M12 12l9-2M12 12l-3 8M12 12l6 6"/><circle cx="12" cy="12" r="9"/></svg>
     <div>

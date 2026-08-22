@@ -22,7 +22,7 @@ function auditoriaRegistrar(acao,modulo,registro,descricao){
   lista.unshift({
     id:gId(),
     dataHora:new Date().toISOString(),
-    usuario:localStorage.getItem('coi_user')||'Operador Local',
+    usuario:typeof usuarioAtualNome==='function'?usuarioAtualNome():'Operador Local',
     acao,
     modulo,
     registro:registro||'',

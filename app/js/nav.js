@@ -736,19 +736,33 @@ function cycleDensidade(){
 }
 
 /* ── PERFIL LOCAL (nome/cargo exibidos no topbar — sem autenticação) ── */
+/* Fase 17 — nome/cargo/perfil exibidos vêm da sessão Supabase Auth real
+   (coi.usuarios, via usuarioAtual()), nunca mais de um valor solto em
+   localStorage sem dono. Sem sessão resolvida ainda (boot/sync em
+   andamento), mostra um rótulo neutro em vez de inventar um nome. */
 function refreshUserTopbar(){
-  const nome=localStorage.getItem('coi_user')||'Operador Local';
-  const cargo=localStorage.getItem('coi_user_cargo')||'Operador de Campo';
+  const u=typeof usuarioAtual==='function'?usuarioAtual():null;
+  const nome=u?u.nome:'Carregando...';
+  const cargo=u?(u.perfil||u.cargo||'—'):'';
   const nomeEl=document.getElementById('tb-user-name'); if(nomeEl) nomeEl.textContent=nome;
   const cargoEl=document.getElementById('tb-user-role'); if(cargoEl) cargoEl.textContent=cargo;
   const avEl=document.getElementById('tb-avatar');
-  if(avEl) avEl.textContent=nome.trim().split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase()||'OL';
+  if(avEl) avEl.textContent=nome.trim().split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase()||'--';
 }
-function editUserField(field){
-  const key=field==='nome'?'coi_user':'coi_user_cargo';
-  const atual=localStorage.getItem(key)||(field==='nome'?'Operador Local':'Operador de Campo');
-  const novo=prompt(field==='nome'?'Nome de exibição:':'Cargo / função:',atual);
-  if(novo!==null&&novo.trim()){ localStorage.setItem(key,novo.trim()); refreshUserTopbar(); if(typeof renderExecHero==='function') renderExecHero(); }
+/* Cargo é o único campo de exibição que ainda é editável livremente
+   pelo próprio usuário (não afeta autorização); nome/e-mail agora vêm
+   da conta real do Supabase Auth e não são mais editáveis por um
+   prompt local. */
+async function editUserField(field){
+  if(field!=='cargo'){ toast('Nome vem da sua conta — fale com o administrador para alterar.','info'); toggleUserMenu(); return; }
+  const u=typeof usuarioAtual==='function'?usuarioAtual():null;
+  if(!u) return;
+  const novo=prompt('Cargo / função:',u.cargo||'');
+  if(novo!==null&&novo.trim()){
+    await usuarioAtualizar(u.id,{cargo:novo.trim()});
+    refreshUserTopbar();
+    if(typeof renderExecHero==='function') renderExecHero();
+  }
   toggleUserMenu();
 }
 function toggleUserMenu(ev){

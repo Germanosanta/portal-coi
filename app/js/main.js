@@ -56,10 +56,10 @@ async function bootApp(){
   if(typeof calibracaoSyncCache==='function') await calibracaoSyncCache();
   if(typeof planejamentoSyncCache==='function') await planejamentoSyncCache();
   if(typeof energiaSyncCache==='function') await energiaSyncCache();
-  /* Fase 16 — Usuários/Perfis/Permissões: permissoes ANTES de usuarios
-     (usuarioRegistrarAcesso, chamado por login.js logo depois, precisa
-     de _perfisCache já carregado pra resolver o perfil "Administrador"/
-     "Operador/Lançador" do primeiro acesso). */
+  /* Fase 16/17 — Usuários/Perfis/Permissões: permissoes ANTES de usuarios
+     (usuarioSincronizarSessao, chamado por login.js logo depois de
+     bootApp resolver, precisa de _perfisCache já carregado pra resolver
+     o perfil "Administrador"/"Operador/Lançador" do primeiro acesso). */
   if(typeof permissoesSyncCache==='function') await permissoesSyncCache();
   if(typeof usuariosSyncCache==='function') await usuariosSyncCache();
   iniciarSincronizacaoPeriodica();
