@@ -1,0 +1,36 @@
+# Portal COI — configuração de publicação no Netlify
+# Site 100% estático (HTML/CSS/JS, sem build) — não inventa processo de
+# build que o projeto não usa. publish = "app" porque é a pasta que
+# contém index.html/manifest/sw.js/js/css/assets (confirmado por
+# inspeção, não suposição — ver relatório da tarefa de publicação).
+
+[build]
+  base = ""
+  publish = "app"
+  command = ""
+
+# Headers de segurança conservadores — NENHUM CSP foi adicionado aqui de
+# propósito: sem um navegador real disponível para testar, uma CSP errada
+# poderia quebrar a conexão com o Supabase, as fontes do Google Fonts ou
+# o próprio service worker sem que houvesse como detectar isso agora.
+# Os headers abaixo são de baixo risco (não interferem em fetch/scripts)
+# e não exigem teste prévio para serem seguros.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), camera=(), microphone=()"
+
+# Service worker precisa ser servido sempre revalidado (nunca cacheado
+# pela CDN do Netlify), senão uma atualização de app/sw.js pode demorar
+# a chegar nos navegadores que já instalaram a versão anterior.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache"

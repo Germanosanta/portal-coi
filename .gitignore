@@ -1,0 +1,19 @@
+# Portal COI — nunca versionar segredos nem dados brutos pesados
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+service_role*
+*service_role*
+
+# backups/planilhas/exports que já circulam soltos no repo — não devem
+# voltar a ser adicionados (nenhum contém segredo, mas são dados
+# operacionais pesados/privados, não pertencem ao deploy do site)
+*.bak
+*.bak-*
+ANTIGO/
+base de dados/*.xlsx
+base de dados/*.xlsm
+supabase/seed/*.csv
