@@ -41,8 +41,9 @@ async function planejamentoSyncCache(){
       if(pErr) throw pErr;
       _pivosSupabaseCache=pivosData||[];
     }
-    const {data,error}=await window.coiDB.schema('coi').from('planejamento_lancamentos').select('*').order('criado_em',{ascending:true});
-    if(error) throw error;
+    /* Fase 19 — mesma correção preventiva do Horímetro: ver database.js
+       (sbFetchAll) para o histórico completo do bug de corte em 1000. */
+    const data=await sbFetchAll((from,to)=>window.coiDB.schema('coi').from('planejamento_lancamentos').select('*').order('criado_em',{ascending:true}).range(from,to));
     _planejamentoCache=(data||[]).map(r=>_planejamentoRowToLocal(r,_pivosSupabaseCache));
     return true;
   }catch(err){

@@ -1,4 +1,4 @@
-/* ── SERVICES / PARADAS ────────────────────────────────────────────
+﻿/* ── SERVICES / PARADAS ────────────────────────────────────────────
    Única camada que lê/grava paradas operacionais. Mesmo padrão de
    histórico permanente do Horímetro (grupoId/versao/atual + soft-delete)
    e mesma regra: categoria/motivo/submotivo/prioridade/criticidade NÃO
@@ -26,7 +26,7 @@ function _paradaRowToLocal(row,pivosSupabase){
     pivoId:pivoLocal?pivoLocal.id:null, _pivoNumero:pivoSup?pivoSup.numero:null,
     data:row.data, horaInicial:row.hora_inicial, horaFinal:row.hora_final,
     tempoParadoHoras:row.tempo_parado_horas!=null?Number(row.tempo_parado_horas):null,
-    falhaId:row._falhaId||null, motivoTexto:row.motivo||'',
+    falhaId:row.falha_id||null, motivoTexto:row.motivo||'',
     operador:row.operador||'', tecnicoId:row.tecnico||'',
     tipoParada:row.tipo_parada||'Não Programada', observacao:row.observacao||'',
     criadoEm:row.criado_em,
@@ -44,8 +44,11 @@ async function paradaSyncCache(){
       if(pErr) throw pErr;
       _pivosSupabaseCache=pivosData||[];
     }
-    const {data,error}=await window.coiDB.schema('coi').from('paradas_lancamentos').select('*').order('criado_em',{ascending:true});
-    if(error) throw error;
+    /* Fase 19 — mesma correção preventiva do Horímetro: sem .range() o
+       PostgREST corta em 1000 linhas (config do projeto) sem avisar.
+       Hoje paradas_lancamentos tem poucas dezenas de linhas, mas o
+       helper evita que o mesmo bug reapareça quando crescer. */
+    const data=await sbFetchAll((from,to)=>window.coiDB.schema('coi').from('paradas_lancamentos').select('*').order('criado_em',{ascending:true}).range(from,to));
     _paradaCache=(data||[]).map(r=>_paradaRowToLocal(r,_pivosSupabaseCache));
     return true;
   }catch(err){
@@ -60,7 +63,7 @@ const paradaAtivas = () => paradaTodos().filter(r=>r.atual&&r.status==='ativo');
 function _paradaDadosParaRow(dados,pivoSupabaseId,extra){
   const falha=typeof indicadorFalhaInfo==='function'?indicadorFalhaInfo(dados.falhaId):null;
   return {
-    pivo_id:pivoSupabaseId, data:dados.data, hora_inicial:dados.horaInicial, hora_final:dados.horaFinal,
+    pivo_id:pivoSupabaseId, falha_id:dados.falhaId||null, data:dados.data, hora_inicial:dados.horaInicial, hora_final:dados.horaFinal,
     tempo_parado_horas:calcDuracaoHoras(dados.horaInicial,dados.horaFinal),
     motivo:falha?`${falha.categoria} — ${falha.motivo}`:'',
     tipo_parada:dados.tipoParada||'Não Programada',
@@ -93,7 +96,7 @@ async function paradaCriar(dados){
   if(error) return {ok:false,erros:['Falha ao gravar no banco: '+error.message]};
 
   const registro=_paradaRowToLocal(inserted,_pivosSupabaseCache);
-  registro._falhaId=dados.falhaId;
+
   _paradaCache.push(registro);
 
   const falha=indicadorFalhaInfo(dados.falhaId);
@@ -151,7 +154,7 @@ async function paradaAtualizar(grupoId,dados){
 
   atualLocal.atual=false;
   const registro=_paradaRowToLocal(inserted,_pivosSupabaseCache);
-  registro._falhaId=dados.falhaId;
+
   _paradaCache.push(registro);
 
   const valorNovo=`${registro.horaInicial}–${registro.horaFinal} (${fmt(registro.tempoParadoHoras,1)}h)`;
@@ -254,3 +257,5 @@ function paradaResumoPivo(pivoId){
     linhaDoTempo:regs.map(r=>({data:r.data,horas:r.tempoParadoHoras})),
   };
 }
+
+

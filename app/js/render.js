@@ -3,6 +3,14 @@ const BC = {home:'Portal COI',opdash:'Painel Operacional',exec:'Visão Geral',ir
 let curPage='home';
 
 function goPage(id, btn) {
+  /* Fase 20 — guard central de páginas: mesmo chamando goPage() direto
+     (atalho do Dashboard, link antigo, etc.), sem passar pelo menu, uma
+     página fora da liberação temporária (só Horímetro) não abre. Isso é
+     só a Camada 1 (UX) — a Camada 2 real é o RLS do Supabase. */
+  if(typeof paginaLiberada==='function'&&!paginaLiberada(id)){
+    if(typeof avisarModuloBloqueado==='function') avisarModuloBloqueado();
+    return;
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const el=document.getElementById('page-'+id); if(el) el.classList.add('active');

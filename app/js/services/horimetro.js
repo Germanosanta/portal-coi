@@ -76,9 +76,19 @@ async function horimetroSyncCache(){
     if(pErr) throw pErr;
     _pivosSupabaseCache=pivosData||[];
 
-    const {data,error}=await window.coiDB.schema('coi').from('horimetro_lancamentos').select('*').order('criado_em',{ascending:true});
-    if(error) throw error;
-    _horimetroCache=(data||[]).map(_rowToLocal);
+    /* Fase 18 — o Supabase (config do projeto, PostgREST "Max Rows") corta
+       qualquer select sem `.range()` em 1000 linhas, devolvendo 206
+       Partial Content SEM lançar erro — supabase-js não avisa disso.
+       Com 42.616 Horímetros isso truncava o cache silenciosamente para
+       ~1000 registros (só os mais antigos, por causa do order asc), e
+       toda a tela de Histórico/Dashboard/Indicadores herdava o corte sem
+       nenhum sintoma além de "sumiu lançamento". `sbFetchAll` (Fase 19,
+       database.js) pagina 1000 em 1000 até acabar — o cache em memória
+       continua tendo o histórico completo, sem mudar em nada quem lê
+       `horimetroTodos()/horimetroAtivos()` nem a paginação da própria
+       tela (que já pagina 20 em 20 a partir do array completo). */
+    const data=await sbFetchAll((from,to)=>window.coiDB.schema('coi').from('horimetro_lancamentos').select('*').order('criado_em',{ascending:true}).range(from,to));
+    _horimetroCache=data.map(_rowToLocal);
     _horimetroSyncOk=true;
     return true;
   }catch(err){

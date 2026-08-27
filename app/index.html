@@ -631,19 +631,19 @@
         </button>
         <button class="tab-btn" id="lhm-tab-parada" onclick="lhm.tabNav('parada',this)">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="16" y1="16" x2="12" y2="12"/></svg>
-          Parada
+          Parada 🔒
         </button>
         <button class="tab-btn" id="lhm-tab-falha" onclick="lhm.tabNav('falha',this)">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-          Falha / Indicador
+          Falha / Indicador 🔒
         </button>
         <button class="tab-btn" id="lhm-tab-ferti" onclick="lhm.tabNav('ferti',this)">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-          Fertirrigação
+          Fertirrigação 🔒
         </button>
         <button class="tab-btn" id="lhm-tab-calibracao" onclick="lhm.tabNav('calibracao',this)">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/><path d="M12 8v4l2 2"/></svg>
-          Calibração de Lâmina
+          Calibração de Lâmina 🔒
         </button>
         <button class="tab-btn" id="lhm-tab-historico" onclick="lhm.tabNav('historico',this)">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" style="vertical-align:middle;margin-right:5px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
@@ -1902,6 +1902,7 @@
 <script src="js/services/calculos.js"></script>
 <script src="js/services/validacoes.js"></script>
 <script src="js/cadastro.js"></script>
+<script src="js/services/database.js"></script>
 <script src="js/services/horimetro.js"></script>
 <script src="js/services/indicador.js"></script>
 <script src="js/services/parada.js"></script>
@@ -1911,7 +1912,6 @@
 <script src="js/services/energia.js"></script>
 <script src="js/services/usuarios.js"></script>
 <script src="js/services/permissoes.js"></script>
-<script src="js/services/database.js"></script>
 <script src="js/services/auditoria.js"></script>
 <!-- SheetJS: única dependência externa do projeto, só para ler .xlsx/.xls
      (formato binário — não é viável de parsear em JS puro). Nenhum outro

@@ -19,8 +19,9 @@ let _usuariosSyncOk=false;
 async function usuariosSyncCache(){
   if(typeof window.coiDB==='undefined'){ console.warn('[usuarios] Supabase não configurado — cache vazio.'); return false; }
   try{
-    const {data,error}=await window.coiDB.schema('coi').from('usuarios').select('*').order('created_at',{ascending:true});
-    if(error) throw error;
+    /* Fase 19 — mesma correção preventiva do Horímetro: ver database.js
+       (sbFetchAll) para o histórico completo do bug de corte em 1000. */
+    const data=await sbFetchAll((from,to)=>window.coiDB.schema('coi').from('usuarios').select('*').order('created_at',{ascending:true}).range(from,to));
     _usuariosCache=(data||[]).map(_rowToLocalUsuario);
     _usuariosSyncOk=true;
     return true;

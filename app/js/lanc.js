@@ -21,6 +21,14 @@ const lhm={
 
   /* ── NAVEGAÇÃO ENTRE ABAS ─────────────────────────────────────── */
   tabNav(id){
+    /* Fase 20 — dentro da página "Lançamentos" só as abas de Horímetro
+       (lanc/historico/auditoria) ficam liberadas; Paradas/Falhas/
+       Fertirrigação/Calibração continuam bloqueadas mesmo a página em
+       si estando aberta (ver LHM_TABS_LIBERADAS em nav.js). */
+    if(typeof LHM_TABS_LIBERADAS!=='undefined'&&!LHM_TABS_LIBERADAS.has(id)){
+      if(typeof avisarModuloBloqueado==='function') avisarModuloBloqueado();
+      id='lanc';
+    }
     ['lanc','falha','parada','ferti','calibracao','historico','auditoria'].forEach(k=>{
       const panel=document.getElementById('lhm-panel-'+k);
       if(panel) panel.style.display=(k===id)?'':'none';

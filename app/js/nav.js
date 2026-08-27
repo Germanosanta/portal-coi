@@ -333,6 +333,47 @@ const SB_MODULES=[
 ];
 const SB_GROUP_ORDER=['Centro de Operações','Lançamentos','Indicadores','Relatórios','Cadastros','Administração'];
 
+/* ── FASE 20 — LIBERAÇÃO TEMPORÁRIA: SOMENTE HORÍMETRO ────────────────
+   Publicação inicial do Portal COI: só o fluxo de Horímetro (lançar,
+   editar, excluir logicamente, consultar histórico, filtrar, ver
+   auditoria) fica liberado. Todo o resto do sistema continua existindo
+   no código (nada foi apagado/removido), só bloqueado na entrada — para
+   liberar um módulo no futuro, basta adicionar a chave/aba no set
+   correspondente abaixo.
+
+   Isto é só a Camada 1 (UX/roteamento) — a Camada 2 real de segurança é
+   o RLS do Supabase (Prompt 5/6), porque um cadeado de tela nunca
+   impede alguém de chamar a API diretamente com a mesma chave anon que
+   o navegador usa. Ver README/relatório da tarefa para o SQL de RLS
+   pendente de execução no painel do Supabase. */
+const SB_MODULOS_LIBERADOS=new Set(['horimetros']);
+/* Abas de dentro da página 'lanc' (Lançamentos) que pertencem ao fluxo
+   de Horímetro e continuam liberadas mesmo a página 'lanc' não sendo
+   100% um módulo só de Horímetro (ver SB_MODULES: paradas/falhas/ferti/
+   calibração também vivem em 'lanc', só que em abas diferentes). */
+const LHM_TABS_LIBERADAS=new Set(['lanc','historico','auditoria']);
+/* Páginas (goPage) liberadas independente do módulo/aba: 'home' é a
+   landing/dashboard (leitura agregada, sem ação própria) e 'lanc' é
+   onde vive o Horímetro (com o filtro de aba acima). */
+const SB_PAGINAS_LIBERADAS=new Set(['home','lanc']);
+
+const MSG_MODULO_BLOQUEADO='Este módulo está temporariamente bloqueado.\nNo momento estamos trabalhando apenas com o Horímetro.';
+
+/* Guard central — único lugar que decide se um módulo/página pode
+   abrir. Chamado tanto pelo clique no menu (sbNavigate) quanto pelo
+   próprio roteador (goPage em render.js), para que digitar/forçar uma
+   navegação direta (ex.: um botão de atalho no Dashboard) não contorne
+   o bloqueio só porque não passou pelo menu. */
+function moduloLiberado(key){
+  return !SB_MODULOS_LIBERADOS.size||SB_MODULOS_LIBERADOS.has(key)||!SB_MODULES.some(m=>m.key===key);
+}
+function paginaLiberada(pageId){
+  return SB_PAGINAS_LIBERADAS.has(pageId);
+}
+function avisarModuloBloqueado(){
+  toast(MSG_MODULO_BLOQUEADO.replace('\n',' '),'warn',4500);
+}
+
 function sbFavoritos(){ try{ return JSON.parse(localStorage.getItem('coi_ui_favoritos')||'[]'); }catch{ return []; } }
 function sbIsFavorito(key){ return sbFavoritos().includes(key); }
 function sbToggleFavorito(key,ev){
@@ -346,12 +387,13 @@ function sbToggleFavorito(key,ev){
 function sbItemHtml(m,compact){
   /* <div role="button"> em vez de <button> aninhado: a estrela de favorito
      também é interativa, e HTML não permite botão dentro de botão. */
-  return `<div class="nav-item" role="button" tabindex="0" data-mod-key="${m.key}"
-      onclick="sbNavigate('${m.key}',this)" onkeydown="if(event.key==='Enter')sbNavigate('${m.key}',this)" title="${m.desc}">
+  const bloqueado=!moduloLiberado(m.key);
+  return `<div class="nav-item${bloqueado?' nav-item-locked':''}" role="button" tabindex="0" data-mod-key="${m.key}"
+      onclick="sbNavigate('${m.key}',this)" onkeydown="if(event.key==='Enter')sbNavigate('${m.key}',this)" title="${bloqueado?'Módulo temporariamente bloqueado':m.desc}">
     <span class="nav-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85">${SB_ICON[m.icon]||SB_ICON.dashboard}</svg></span>
     <span style="flex:1;min-width:0;overflow:hidden">
-      <span class="nav-item-text">${m.label}</span>
-      ${compact?'':`<span class="nav-item-desc">${m.desc}</span>`}
+      <span class="nav-item-text">${m.label}${bloqueado?' 🔒':''}</span>
+      ${compact?'':`<span class="nav-item-desc">${bloqueado?'Temporariamente bloqueado':m.desc}</span>`}
     </span>
     <span class="nav-fav-btn${sbIsFavorito(m.key)?' is-fav':''}" role="button" tabindex="0" onclick="sbToggleFavorito('${m.key}',event)" title="Favoritar">
       <svg viewBox="0 0 24 24" fill="${sbIsFavorito(m.key)?'currentColor':'none'}" stroke="currentColor" stroke-width="1.8">${SB_ICON.star}</svg>
@@ -404,6 +446,7 @@ function renderSidebarNav(){
 function sbNavigate(key,btn){
   const m=SB_MODULES.find(x=>x.key===key);
   if(!m) return;
+  if(!moduloLiberado(key)){ avisarModuloBloqueado(); return; }
   if(m.page==='admin') SB_ADMIN_FOCO=key;
   goPage(m.page,btn||undefined);
   if(m.after) m.after();
