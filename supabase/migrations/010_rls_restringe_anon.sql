@@ -1,13 +1,18 @@
 -- Fase 21 (Prompt 7) — RLS: fecha acesso anônimo em todo o schema coi.
 --
--- NÃO EXECUTADO POR MIM. Este ambiente não tem SQL Editor/CLI de banco/
--- service_role — só chamadas REST via chave anon/JWT de sessão. Rode
--- este arquivo manualmente em: painel do Supabase → projeto
--- hzduodmytbkqjbbyizkb → SQL Editor → colar e Run.
+-- EXECUTADO (confirmado no Prompt 8, 2026-08-27, por teste comportamental
+-- via REST — este ambiente nunca teve SQL Editor/CLI/service_role para
+-- rodar isto; a execução foi feita por quem tem acesso ao painel do
+-- Supabase, usando este arquivo como script). Evidência: anon agora
+-- recebe 401/42501 "permission denied" em todas as tabelas coi.* (select
+-- e write); authenticated (Carlos Santos/Administrador) continua com
+-- select/insert/update/delete funcionando normalmente; is_admin() foi
+-- testado com um UPDATE real em coi.perfis. Ver relatório da tarefa
+-- Prompt 8 para a evidência completa (status HTTP de cada chamada).
 --
--- Rode em blocos (cada "-- BLOCO N" é independente) e teste entre um e
--- outro, conforme o relatório da tarefa. Se algo quebrar, o comando de
--- reversão está comentado logo abaixo de cada bloco.
+-- Havia sido rodado em blocos (cada "-- BLOCO N" é independente),
+-- testando entre um e outro. Se algo quebrar, o comando de reversão
+-- está comentado logo abaixo de cada bloco.
 --
 -- Contexto: hoje TODAS as tabelas coi.* têm policy `_anon_all` com
 -- `using(true) with check(true)` + grant explícito a `anon` — ou seja,
