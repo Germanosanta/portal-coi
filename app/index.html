@@ -664,14 +664,20 @@
           <!-- FORMULÁRIO PRINCIPAL -->
           <div>
 
-            <!-- ── SEÇÃO 1: SELEÇÃO INICIAL ────────────────────── -->
+            <!-- ── INDICADOR DE ETAPAS (Fase 22) — 1 etapa por vez,
+                 mobile-first: barra compacta, funciona em qualquer
+                 largura, sem quebrar linha em telas pequenas. ────── -->
+            <div id="lhm-step-indicator" style="display:flex;align-items:center;gap:6px;margin-bottom:.75rem;font-size:11px;overflow-x:auto"></div>
+
+            <!-- ── ETAPA 1: IDENTIFICAÇÃO DO EQUIPAMENTO ────────── -->
+            <div id="lhm-step1">
             <div class="card" style="margin-bottom:.9rem">
               <div class="card-header" style="background:linear-gradient(90deg,var(--brand-600),var(--brand-500));border-radius:var(--radius-lg) var(--radius-lg) 0 0">
                 <div class="card-title" style="color:#fff">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2.2" style="margin-right:4px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  Seção 1 — Identificação do Equipamento
+                  Identificação do Equipamento
                 </div>
-                <span class="badge" style="background:rgba(255,255,255,.2);color:#fff;font-size:10px">Passo 1 de 3</span>
+                <span class="badge" style="background:rgba(255,255,255,.2);color:#fff;font-size:10px">Etapa 1 de 3</span>
               </div>
               <div class="card-body">
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
@@ -724,16 +730,19 @@
                 </div>
               </div>
             </div>
+            </div>
+            <!-- fim ETAPA 1 -->
 
-            <!-- ── SEÇÃO 2: HORÍMETROS ─────────────────────────── -->
-            <div class="card" id="lhm-sec2" style="margin-bottom:.9rem;opacity:.5;pointer-events:none">
+            <!-- ── ETAPA 2: LEITURA DO HORÍMETRO ────────────────── -->
+            <div id="lhm-step2" style="display:none">
+            <div class="card" id="lhm-sec2" style="margin-bottom:.9rem">
               <div class="card-header">
                 <div class="card-title">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 3.5"/></svg>
-                  Seção 2 — Leitura de Horímetros
+                  Leitura do Horímetro
                 </div>
                 <div style="display:flex;align-items:center;gap:.5rem">
-                  <span class="badge b-neutral" style="font-size:9px">Passo 2 de 3</span>
+                  <span class="badge b-neutral" style="font-size:9px">Etapa 2 de 3</span>
                   <span id="lhm-horas-badge" class="badge b-neutral">Informe os horímetros</span>
                 </div>
               </div>
@@ -789,15 +798,18 @@
                 </div>
               </div>
             </div>
+            </div>
+            <!-- fim ETAPA 2 -->
 
-            <!-- ── SEÇÃO 3: IRRIGAÇÃO ──────────────────────────── -->
+            <!-- ── ETAPA 3: PARÂMETROS DE IRRIGAÇÃO ─────────────── -->
+            <div id="lhm-step3" style="display:none">
             <div class="card" style="margin-bottom:.9rem">
               <div class="card-header">
                 <div class="card-title">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#0284c7" stroke-width="2.2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
-                  Seção 3 — Parâmetros de Irrigação
+                  Parâmetros de Irrigação
                 </div>
-                <span class="badge b-neutral" style="font-size:9px">Passo 3 de 3</span>
+                <span class="badge b-neutral" style="font-size:9px">Etapa 3 de 3</span>
               </div>
               <div class="card-body">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
@@ -850,24 +862,37 @@
                 </div>
               </div>
             </div>
+            </div>
+            <!-- fim ETAPA 3 -->
 
-            <!-- ── RODAPÉ DO FORMULÁRIO ────────────────────────── -->
-            <div style="display:flex;align-items:center;justify-content:space-between;
+            <!-- ── RODAPÉ DO FORMULÁRIO (Fase 22 — botões trocam
+                 conforme a etapa atual; lhm.goStep() decide quais ficam
+                 visíveis; nenhum botão novo de gravação, tudo continua
+                 chamando as mesmas funções de sempre) ─────────────── -->
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;
               padding:.8rem 1rem;background:var(--bg-surface);border:1px solid var(--border);
               border-radius:var(--radius);box-shadow:var(--shadow-xs)">
               <div style="font-size:11.5px;color:var(--text-secondary)" id="lhm-footer-msg">
                 Preencha Fazenda e Pivô para ativar o preenchimento automático
               </div>
-              <div style="display:flex;gap:.5rem">
-                <button class="btn btn-ghost" onclick="lhm.cancelar()">
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+                <button class="btn btn-ghost" id="lhm-btn-cancelar" onclick="lhm.cancelar()">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   Cancelar
                 </button>
-                <button class="btn btn-ghost" onclick="lhm.limpar()">
+                <button class="btn btn-ghost" id="lhm-btn-limpar" onclick="lhm.limpar()">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                   Limpar
                 </button>
-                <button class="btn btn-primary" id="lhm-salvar-btn" onclick="lhm.salvar()">
+                <button class="btn btn-ghost" id="lhm-btn-voltar" style="display:none" onclick="lhm.voltarStep()">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+                  Voltar
+                </button>
+                <button class="btn btn-primary" id="lhm-btn-proximo" onclick="lhm.proximoStep()">
+                  Próximo
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <button class="btn btn-primary" id="lhm-salvar-btn" style="display:none" onclick="lhm.salvar()">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
                   <span id="lhm-salvar-lbl">Salvar Lançamento</span>
                 </button>

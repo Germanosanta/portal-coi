@@ -18,6 +18,65 @@ const lhm={
   editandoGrupoId:null,
   pagina:0,
   _histSelectsBuilt:false,
+  step:1,
+
+  /* ── FASE 22 — FLUXO EM 3 ETAPAS (Identificação → Horímetro →
+     Irrigação), uma por vez, principalmente pensado pro celular. Não
+     mexe em nenhuma validação/cálculo/gravação que já existia — só
+     decide qual dos 3 cards (lhm-step1/2/3) fica visível e quais
+     botões aparecem no rodapé. salvar() continua sendo chamado só na
+     etapa 3, exatamente a mesma função de sempre. */
+  goStep(n){
+    this.step=n;
+    [1,2,3].forEach(i=>{ const el=document.getElementById('lhm-step'+i); if(el) el.style.display=(i===n)?'':'none'; });
+    const set=(id,show)=>{ const el=document.getElementById(id); if(el) el.style.display=show?'':'none'; };
+    set('lhm-btn-cancelar',n===1);
+    set('lhm-btn-limpar',n===1);
+    set('lhm-btn-voltar',n>1);
+    set('lhm-btn-proximo',n<3);
+    set('lhm-salvar-btn',n===3);
+    this.renderStepIndicator();
+    const panel=document.getElementById('lhm-panel-lanc');
+    if(panel) panel.scrollIntoView({behavior:'smooth',block:'start'});
+  },
+
+  renderStepIndicator(){
+    const el=document.getElementById('lhm-step-indicator');
+    if(!el) return;
+    const labels=['Identificação','Horímetro','Irrigação'];
+    el.innerHTML=labels.map((lbl,i)=>{
+      const n=i+1;
+      const done=n<this.step, ativo=n===this.step;
+      const icon=done?'✓':ativo?'●':'○';
+      const cor=ativo?'var(--brand-600)':done?'var(--brand-500)':'var(--text-tertiary)';
+      const ligacao=n<3?`<span style="flex:1;height:2px;min-width:14px;background:${done?'var(--brand-500)':'var(--border)'}"></span>`:'';
+      return `<span style="display:flex;align-items:center;gap:4px;white-space:nowrap;color:${cor};font-weight:${ativo?700:500}">${icon} ${n}. ${lbl}</span>${ligacao}`;
+    }).join('');
+  },
+
+  /* Validação ao avançar — mesmas regras de sempre (Fazenda/Pivô/Cultura
+     obrigatórios na 1, Horímetro Inicial/Final/Data da OS + Final>=Inicial
+     na 2), só que agora bloqueando o avanço de etapa em vez de deixar a
+     seção seguinte "acinzentada". */
+  validarStep1(){
+    if(!v('lhm-faz')){ toast('Selecione a Fazenda.','warn'); document.getElementById('lhm-faz').focus(); return false; }
+    if(!v('lhm-pivo')){ toast('Selecione o Pivô/Equipamento.','warn'); document.getElementById('lhm-pivo').focus(); return false; }
+    if(!v('lhm-cult')){ toast('Selecione a Cultura.','warn'); document.getElementById('lhm-cult').focus(); return false; }
+    return true;
+  },
+  validarStep2(){
+    const h1=v('lhm-h1'), h2=v('lhm-h2'), data=v('lhm-data');
+    if(h1===''){ toast('Informe o Horímetro Inicial.','warn'); document.getElementById('lhm-h1').focus(); return false; }
+    if(h2===''){ toast('Informe o Horímetro Final.','warn'); document.getElementById('lhm-h2').focus(); return false; }
+    if(!data){ toast('Informe a Data da OS.','warn'); document.getElementById('lhm-data').focus(); return false; }
+    if(!horasValidas(h1,h2)){ toast('Horímetro Final deve ser maior que o Inicial.','warn'); document.getElementById('lhm-h2').focus(); return false; }
+    return true;
+  },
+  proximoStep(){
+    if(this.step===1){ if(!this.validarStep1()) return; this.goStep(2); }
+    else if(this.step===2){ if(!this.validarStep2()) return; this.goStep(3); }
+  },
+  voltarStep(){ if(this.step>1) this.goStep(this.step-1); },
 
   /* ── NAVEGAÇÃO ENTRE ABAS ─────────────────────────────────────── */
   tabNav(id){
@@ -93,6 +152,7 @@ const lhm={
     document.getElementById('lhm-resumo-card').style.display='none';
     document.getElementById('lhm-footer-msg').textContent='Preencha Fazenda e Pivô para ativar o preenchimento automático';
     document.getElementById('lhm-salvar-lbl').textContent='Salvar Lançamento';
+    this.goStep(1);
   },
 
   /* ── CASCATA FAZENDA → PIVÔ ───────────────────────────────────── */
@@ -333,6 +393,10 @@ const lhm={
     badge.textContent='Informe os horímetros'; badge.className='badge b-neutral';
     this.atualizarHoraAuto();
     this.onPivo();
+    /* Fazenda/Pivô/Cultura continuam preenchidos (fluxo de vários
+       lançamentos seguidos no mesmo pivô) — volta direto pra Etapa 2
+       em vez de forçar reconfirmar a Etapa 1 de novo. */
+    this.goStep(2);
   },
 
   mostrarResumo(registro){
@@ -378,6 +442,7 @@ const lhm={
     document.getElementById('lhm-obs').value=reg.observacao||'';
     this.calc();
     document.getElementById('lhm-salvar-lbl').textContent='Salvar Alteração';
+    this.goStep(1);
     toast('Editando lançamento — uma nova versão será criada ao salvar (o registro original é preservado).','info');
   },
 
