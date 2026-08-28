@@ -251,6 +251,19 @@ body.coi-portal .main{margin-left:0}
   .lanc-subgroup-label{flex:0 0 100%;padding:2px 4px 2px 4px}
 }
 
+/* Fase 22 — publicação só-Horímetro: a coluna .lanc-sidenav (Horímetro/
+   Paradas🔒/Falha🔒/.../Histórico/Auditoria) duplicava exatamente os
+   mesmos itens que já aparecem na sidebar principal (verde, à esquerda,
+   com os mesmos cadeados — ver SB_MODULES grupo "Lançamentos" em
+   nav.js). Escondida só em #page-lanc (não mexe em #page-cad, que
+   continua usando a mesma mecânica de coluna lateral pros próprios
+   grupos de cadastro). Os botões continuam existindo no HTML/DOM —
+   "Ver Histórico" no cabeçalho da página já chama a mesma
+   lhm.tabNav('historico'), então nada de navegação foi perdido. */
+#page-lanc .page-wrap{grid-template-columns:1fr!important}
+#page-lanc .page-wrap>.lanc-sidenav{display:none!important}
+#page-lanc .page-wrap>[id^="lhm-panel-"]{grid-column:1!important}
+
 /* ═════════════════════ CONSULTA OPERACIONAL (#page-dados) · Sprint 01.3
    Central de consulta unificada (js/consulta.js, objeto `dq`) sobre os
    lançamentos reais (Horímetro/Parada/Falha/Fertirrigação/Calibração).
