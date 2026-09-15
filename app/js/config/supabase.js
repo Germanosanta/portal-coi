@@ -1,7 +1,9 @@
-﻿// Conexão Supabase - Portal COI
+// Conexão Supabase - Portal COI
+// Projeto novo (o anterior, hzduodmytbkqjbbyizkb, ficou pausado sem vaga
+// gratuita pra reativar — ver histórico do projeto).
 
-const COI_SUPABASE_URL = "https://hzduodmytbkqjbbyizkb.supabase.co";
-const COI_SUPABASE_KEY = "sb_publishable_ApEZW_1CC7kzRBuF9qpyRg_cNeZV__9";
+const COI_SUPABASE_URL = "https://ijmojpwqvdqjazfcirle.supabase.co";
+const COI_SUPABASE_KEY = "sb_publishable_Qtzn5qOp75AkQ7od9pgS8g_EHgqdMck";
 
 window.coiDB = window.supabase.createClient(
   COI_SUPABASE_URL,
