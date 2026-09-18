@@ -19,7 +19,7 @@
    de login; corrigido aqui para valer nas duas telas). ─────────────── */
 .alert{display:flex;gap:10px;padding:12px 14px;border-radius:var(--ds-radius-md);border:1px solid transparent;
   font-size:12.5px;line-height:1.5}
-.alert svg{flex-shrink:0;margin-top:1px}
+.alert svg{width:20px;height:20px;flex-shrink:0;margin-top:1px}
 .alert-title{font-weight:700;margin-bottom:2px}
 .alert-info{background:var(--ds-info-l);color:var(--ds-info-d);border-color:color-mix(in srgb,var(--ds-info) 25%,transparent)}
 .alert-success{background:var(--ds-success-l);color:var(--ds-success-d);border-color:color-mix(in srgb,var(--ds-success) 25%,transparent)}
