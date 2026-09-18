@@ -364,10 +364,20 @@ const MSG_MODULO_BLOQUEADO='Este módulo está temporariamente bloqueado.\nNo mo
    próprio roteador (goPage em render.js), para que digitar/forçar uma
    navegação direta (ex.: um botão de atalho no Dashboard) não contorne
    o bloqueio só porque não passou pelo menu. */
+/* Administrador fura o bloqueio "só Horímetro" — a trava é de UX/rollout
+   pros demais perfis, não faz sentido impedir o próprio admin de ver o
+   que já existe implementado. Nunca contorna RLS (Camada 2 continua a
+   mesma); só libera a navegação nesta Camada 1. */
+function _adminAtualFuraBloqueio(){
+  const u=typeof usuarioAtual==='function'?usuarioAtual():null;
+  return !!(u&&u.perfil==='Administrador');
+}
 function moduloLiberado(key){
+  if(_adminAtualFuraBloqueio()) return true;
   return !SB_MODULOS_LIBERADOS.size||SB_MODULOS_LIBERADOS.has(key)||!SB_MODULES.some(m=>m.key===key);
 }
 function paginaLiberada(pageId){
+  if(_adminAtualFuraBloqueio()) return true;
   return SB_PAGINAS_LIBERADAS.has(pageId);
 }
 function avisarModuloBloqueado(){

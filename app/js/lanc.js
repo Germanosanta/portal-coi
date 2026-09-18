@@ -84,7 +84,8 @@ const lhm={
        (lanc/historico/auditoria) ficam liberadas; Paradas/Falhas/
        Fertirrigação/Calibração continuam bloqueadas mesmo a página em
        si estando aberta (ver LHM_TABS_LIBERADAS em nav.js). */
-    if(typeof LHM_TABS_LIBERADAS!=='undefined'&&!LHM_TABS_LIBERADAS.has(id)){
+    const _admin=typeof _adminAtualFuraBloqueio==='function'&&_adminAtualFuraBloqueio();
+    if(!_admin&&typeof LHM_TABS_LIBERADAS!=='undefined'&&!LHM_TABS_LIBERADAS.has(id)){
       if(typeof avisarModuloBloqueado==='function') avisarModuloBloqueado();
       id='lanc';
     }
