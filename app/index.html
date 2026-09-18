@@ -1769,7 +1769,10 @@
         <div class="card" style="margin-bottom:1rem">
           <div class="card-header">
             <div class="card-title">Usuários</div>
-            <span id="admin-usuarios-cnt" style="font-size:10px;color:var(--text-tertiary)"></span>
+            <div style="display:flex;align-items:center;gap:.6rem">
+              <span id="admin-usuarios-cnt" style="font-size:10px;color:var(--text-tertiary)"></span>
+              <button class="btn btn-primary btn-xs" id="admin-usuarios-novo-btn" onclick="adminAbrirNovoUsuario()">+ Novo usuário</button>
+            </div>
           </div>
           <div class="table-wrap" id="admin-usuarios-tbl"></div>
         </div>
@@ -1893,6 +1896,36 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="cadCloseForm()">Cancelar</button>
       <button class="btn btn-primary" onclick="cadSubmitForm()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOVO USUÁRIO (Administração → Usuários) — cria o login real
+     (Supabase Auth, e-mail+senha) e o registro em coi.usuarios de uma vez,
+     sem precisar esperar o primeiro login da pessoa. Exige confirmação de
+     e-mail (mailer_autoconfirm=false) antes dela conseguir entrar. -->
+<div class="modal-overlay" id="novo-usuario-modal-overlay">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <div class="modal-title">Novo usuário</div>
+      <button class="modal-close" onclick="adminFecharNovoUsuario()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin-bottom:.9rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>A pessoa recebe um e-mail de confirmação do Supabase e só consegue entrar depois de clicar no link.</div>
+      </div>
+      <div class="field"><label>Nome completo</label><input type="text" class="input" id="novo-usuario-nome" placeholder="Ex.: Maria Silva"></div>
+      <div class="field"><label>E-mail</label><input type="email" class="input" id="novo-usuario-email" placeholder="nome@santacolomba.com.br"></div>
+      <div class="field"><label>Senha temporária</label><input type="text" class="input" id="novo-usuario-senha" placeholder="Mínimo 6 caracteres"></div>
+      <div class="field"><label>Cargo</label><input type="text" class="input" id="novo-usuario-cargo" placeholder="Ex.: Operador de Campo"></div>
+      <div class="field"><label>Perfil</label><select class="select" id="novo-usuario-perfil"></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="adminFecharNovoUsuario()">Cancelar</button>
+      <button class="btn btn-primary" id="novo-usuario-submit-btn" onclick="adminCriarUsuario()">Criar usuário</button>
     </div>
   </div>
 </div>

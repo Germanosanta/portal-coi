@@ -657,6 +657,67 @@ async function adminAlternarStatusUsuario(id){
   renderAdminUsuariosTabela();
 }
 
+/* ── ADMINISTRAÇÃO / USUÁRIOS — CRIAR NOVO (botão "+ Novo usuário") ────
+   Cria o login real no Supabase Auth (signUp — mesma API pública que o
+   app já usa, sem precisar de service_role) e, na sequência, grava
+   direto o registro em coi.usuarios com o perfil escolhido — não espera
+   o primeiro login da pessoa (usuarioSincronizarSessao continua existindo
+   pra cobrir o caso de alguém logar sem passar por aqui, mas agora o
+   admin decide o perfil de cara em vez de cair no default "Operador/
+   Lançador"). Exige canEdit('usuarios'), mesma trava das outras ações
+   desta tela. */
+function adminAbrirNovoUsuario(){
+  if(bloquearSemPermissao('usuarios','edit')) return;
+  ['novo-usuario-nome','novo-usuario-email','novo-usuario-senha','novo-usuario-cargo'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  const sel=document.getElementById('novo-usuario-perfil');
+  if(sel){
+    const perfis=perfisTodos().filter(p=>p.ativo);
+    sel.innerHTML=perfis.map(p=>`<option value="${p.id}"${p.nome==='Operador/Lançador'?' selected':''}>${p.nome}</option>`).join('');
+  }
+  document.getElementById('novo-usuario-modal-overlay').classList.add('open');
+}
+function adminFecharNovoUsuario(){
+  document.getElementById('novo-usuario-modal-overlay').classList.remove('open');
+}
+async function adminCriarUsuario(){
+  if(bloquearSemPermissao('usuarios','edit')) return;
+  const nome=v('novo-usuario-nome').trim();
+  const email=v('novo-usuario-email').trim();
+  const senha=v('novo-usuario-senha');
+  const cargo=v('novo-usuario-cargo').trim();
+  const perfilId=document.getElementById('novo-usuario-perfil').value;
+  if(!nome||!email){ toast('Informe nome e e-mail.','err'); return; }
+  if(!senha||senha.length<6){ toast('A senha precisa ter pelo menos 6 caracteres.','err'); return; }
+  if(!perfilId){ toast('Selecione um perfil.','err'); return; }
+
+  const btn=document.getElementById('novo-usuario-submit-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Criando...'; }
+  try{
+    const {data,error}=await window.coiDB.auth.signUp({email,password:senha});
+    if(error){ toast('Falha ao criar login: '+_traduzErroAuth(error),'err'); return; }
+    const authId=data&&data.user&&data.user.id;
+    if(!authId){ toast('Não foi possível obter o ID do novo usuário.','err'); return; }
+
+    const perfilNome=(perfisTodos().find(p=>p.id===perfilId)||{}).nome||'';
+    const {error:errIns}=await window.coiDB.schema('coi').from('usuarios').insert({
+      id:authId, nome, email, cargo:cargo||null, perfil_id:perfilId, ativo:true,
+    });
+    if(errIns){ toast('Login criado, mas falhou ao gravar o cadastro: '+errIns.message,'err'); return; }
+
+    await usuariosSyncCache();
+    auditoriaRegistrar('CRIAÇÃO','Usuários',email,`Novo usuário criado (perfil: ${perfilNome}).`);
+    toast('Usuário criado! Falta a pessoa confirmar o e-mail pra conseguir entrar.','ok',5000);
+    adminFecharNovoUsuario();
+    renderAdminUsuariosTabela();
+  }catch(e){
+    toast('Falha de conexão ao criar usuário.','err');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='Criar usuário'; }
+  }
+}
+
 /* ── PERFIS E PERMISSÕES (Fase 16) ────────────────────────────────────
    Seletor de perfil (abas) + matriz de checkboxes agrupada por módulo,
    a partir de services/permissoes.js (perfisTodos/catalogoPermissoes/
