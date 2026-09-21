@@ -12,7 +12,7 @@
    interceptadas/cacheadas aqui — sempre vão direto pra rede.
    ──────────────────────────────────────────────────────────────────── */
 
-const CACHE_VERSION = 'coi-shell-v1';
+const CACHE_VERSION = 'coi-shell-v2';
 
 const PRECACHE_URLS = [
   './',
