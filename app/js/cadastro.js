@@ -117,6 +117,57 @@ const CAD_ENTITIES={
 const cadKey = entity => 'cad_'+entity;
 const cadAll = entity => lsGet(cadKey(entity),[]);
 const cadSaveAll = (entity,arr) => lsSet(cadKey(entity),arr);
+
+/* ── IMPORTAR DADOS TÉCNICOS (vazão/potência/coordenadas) ────────────
+   Cadastros → Pivôs é local (localStorage, por navegador) — nunca vai
+   ler direto do Supabase como Horímetro/Usuários. Este botão faz a
+   ponte manual, 1x: busca coi.pivos_potencia_tecnica (populada via
+   migration 011) e casa pelo NÚMERO do pivô com os registros que já
+   existem aqui, preenchendo só os 4 campos técnicos — nunca mexe em
+   fazenda/casaBomba/área/lâmina/status, que continuam sendo o que já
+   estava cadastrado localmente. */
+async function cadImportarDadosTecnicosPivos(){
+  if(bloquearSemPermissao('cadastros','edit')) return;
+  if(typeof window.coiDB==='undefined'){ toast('Supabase não configurado.','err'); return; }
+  const btn=document.getElementById('cad-pivos-import-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Importando...'; }
+  try{
+    const [pivosR,potenciaR]=await Promise.all([
+      window.coiDB.schema('coi').from('pivos').select('id,numero'),
+      window.coiDB.schema('coi').from('pivos_potencia_tecnica').select('pivo_id,vazao_m3h,potencia_cv,latitude,longitude'),
+    ]);
+    if(pivosR.error) throw pivosR.error;
+    if(potenciaR.error) throw potenciaR.error;
+    const idParaNumero={};
+    (pivosR.data||[]).forEach(p=>{ idParaNumero[p.id]=p.numero; });
+    const porNumero={};
+    (potenciaR.data||[]).forEach(r=>{
+      const numero=idParaNumero[r.pivo_id];
+      if(numero===undefined) return;
+      porNumero[numero]={vazaoM3h:r.vazao_m3h,potenciaCv:r.potencia_cv,latitude:r.latitude,longitude:r.longitude};
+    });
+    const locais=cadAll('pivos');
+    let atualizados=0;
+    locais.forEach(p=>{
+      const dados=porNumero[Number(p.numero)];
+      if(!dados) return;
+      if(dados.vazaoM3h!==null&&dados.vazaoM3h!==undefined) p.vazaoM3h=dados.vazaoM3h;
+      if(dados.potenciaCv!==null&&dados.potenciaCv!==undefined) p.potenciaCv=dados.potenciaCv;
+      if(dados.latitude!==null&&dados.latitude!==undefined) p.latitude=dados.latitude;
+      if(dados.longitude!==null&&dados.longitude!==undefined) p.longitude=dados.longitude;
+      atualizados++;
+    });
+    cadSaveAll('pivos',locais);
+    auditoriaRegistrar&&auditoriaRegistrar('ALTERAÇÃO','Cadastros','Pivôs',`Importou dados técnicos (vazão/potência/coordenadas) de ${atualizados} pivô(s).`);
+    toast(`${atualizados} pivô(s) atualizado(s) com vazão/potência/coordenadas.`,'ok');
+    cadRenderList('pivos');
+  }catch(err){
+    console.error('[cadastro] falha ao importar dados técnicos dos pivôs:',err);
+    toast('Falha ao importar: '+(err.message||err),'err');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='Importar dados técnicos'; }
+  }
+}
 function cadLookupLabel(entity,id){
   if(!id) return '—';
   const cfg=CAD_ENTITIES[entity];

@@ -1614,7 +1614,7 @@
 
       <div class="tab-panel active" id="cad-pivos">
         <div class="card"><div class="card-header"><div class="card-title">Pivôs</div>
-          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-pivos-cnt"></span><button class="btn btn-primary btn-xs" id="cad-pivos-novo" onclick="cadOpenForm('pivos')">+ Novo</button></div></div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-pivos-cnt"></span><button class="btn btn-secondary btn-xs" id="cad-pivos-import-btn" onclick="cadImportarDadosTecnicosPivos()" title="Preenche vazão/potência/coordenadas a partir do módulo de Energia (Supabase)">Importar dados técnicos</button><button class="btn btn-primary btn-xs" id="cad-pivos-novo" onclick="cadOpenForm('pivos')">+ Novo</button></div></div>
           <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-pivos-q" placeholder="Buscar..." oninput="cadRenderList('pivos')" style="height:30px;font-size:12px"></div></div>
           <div class="table-wrap" id="cad-pivos-tbl"></div>
           <div id="cad-pivos-pg" class="pag" style="display:none"></div>
