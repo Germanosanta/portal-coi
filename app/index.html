@@ -1603,6 +1603,7 @@
         <button class="tab-btn" onclick="swTab('cad-paineis',this)">Painéis</button>
         <button class="tab-btn" onclick="swTab('cad-sensores',this)">Sensores</button>
         <button class="tab-btn" onclick="swTab('cad-culturas',this)">Culturas</button>
+        <button class="tab-btn" onclick="swTab('cad-safras',this)">Safras</button>
         <button class="tab-btn" onclick="swTab('cad-operadores',this)">Operadores</button>
         <button class="tab-btn" onclick="swTab('cad-tecnicos',this)">Técnicos</button>
         <button class="tab-btn" onclick="swTab('cad-falhas',this)">Falhas</button>
@@ -1689,6 +1690,15 @@
           <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-culturas-q" placeholder="Buscar..." oninput="cadRenderList('culturas')" style="height:30px;font-size:12px"></div></div>
           <div class="table-wrap" id="cad-culturas-tbl"></div>
           <div id="cad-culturas-pg" class="pag" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="cad-safras">
+        <div class="card"><div class="card-header"><div class="card-title">Safras</div>
+          <div style="display:flex;gap:.5rem;align-items:center"><span style="font-size:10px;color:var(--text-tertiary)" id="cad-safras-cnt"></span><button class="btn btn-primary btn-xs" id="cad-safras-novo" onclick="cadOpenForm('safras')">+ Novo</button></div></div>
+          <div style="display:flex;gap:8px;padding:.6rem 1rem;background:var(--bg-surface2);border-bottom:1px solid var(--border)"><div class="search-bar" style="flex:1"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="input" id="cad-safras-q" placeholder="Buscar..." oninput="cadRenderList('safras')" style="height:30px;font-size:12px"></div></div>
+          <div class="table-wrap" id="cad-safras-tbl"></div>
+          <div id="cad-safras-pg" class="pag" style="display:none"></div>
         </div>
       </div>
 

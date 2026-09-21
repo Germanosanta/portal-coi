@@ -77,7 +77,17 @@ const CAD_ENTITIES={
     {key:'casaBombaId',label:'Casa de Bomba',type:'select',ref:'casasBomba'},
     {key:'area',label:'Área (ha)',type:'number'},
     {key:'laminaBase100',label:'Lâmina a 100% (mm)',type:'number'},
+    {key:'vazaoM3h',label:'Vazão (m³/h)',type:'number'},
+    {key:'potenciaCv',label:'Potência (CV)',type:'number'},
+    {key:'latitude',label:'Latitude',type:'text'},
+    {key:'longitude',label:'Longitude',type:'text'},
     {key:'status',label:'Status',type:'select',options:['Ativo','Manutenção','Inativo'],required:true},
+  ]},
+  safras:{ label:'Safras', labelField:'nome', fields:[
+    {key:'nome',label:'Nome (ex.: 2025/2026)',type:'text',required:true,unique:true},
+    {key:'dataInicio',label:'Início',type:'date'},
+    {key:'dataFim',label:'Fim',type:'date'},
+    {key:'status',label:'Status',type:'select',options:['Planejada','Em andamento','Encerrada'],required:true},
   ]},
   falhas:{ label:'Falhas', labelField:'motivo', fields:[
     {key:'categoria',label:'Categoria',type:'text',required:true},
@@ -453,7 +463,7 @@ function cadFieldsHtml(cfg,rec){
     }
     return `<div class="field" style="margin-bottom:.7rem">
       <label>${f.label}${f.required?' <span class="req">*</span>':''}</label>
-      <input type="${f.type==='number'?'number':'text'}" class="input" id="cadf-${f.key}" value="${val}">
+      <input type="${f.type==='number'?'number':f.type==='date'?'date':'text'}" class="input" id="cadf-${f.key}" value="${val}">
     </div>`;
   }).join('');
 }
