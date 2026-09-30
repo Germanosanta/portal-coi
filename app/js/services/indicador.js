@@ -1,76 +1,138 @@
 /* ── SERVICES / INDICADORES ────────────────────────────────────────
    Duas responsabilidades:
-   1) Registro de ocorrências de falha (única camada que grava em
-      `coi_indicador_ocorrencias` — mesmo padrão de versionamento
-      permanente do serviço de Horímetro).
+   1) Registro de ocorrências de falha — banco oficial passou a ser a
+      tabela `indicador_ocorrencias` (coi.*), no lugar do localStorage
+      (migração de sincronização, 2026-09-21 — mesmo padrão do
+      Horímetro/Fertirrigação: cache em memória sincronizado do
+      Supabase, gravações async).
    2) Cálculo dos indicadores operacionais, de disponibilidade e de
       manutenção, combinando ocorrências de falha + lançamentos de
       horímetro (js/services/horimetro.js) + js/services/calculos.js.
 
+   Falha (categoria/motivo) continua vindo do cadastro local
+   (js/cadastro.js) — gravada como texto, não FK (mesmo caso do
+   produto em Fertirrigação; ver migration 012_ferti_indicador.sql).
+
    As telas nunca calculam nada sozinhas — só chamam estas funções.
    ──────────────────────────────────────────────────────────────── */
 
-const INDICADOR_KEY='coi_indicador_ocorrencias';
-
-const indicadorTodos = () => lsGet(INDICADOR_KEY,[]);
-const indicadorSalvarTudo = arr => lsSet(INDICADOR_KEY,arr);
-const indicadorAtivos = () => indicadorTodos().filter(r=>r.atual&&r.status==='ativo');
+let _indicadorCache=[];
+let _indicadorSyncOk=false;
 
 function indicadorFalhaInfo(falhaId){
   return (cadAll('falhas')||[]).find(f=>f.id===falhaId)||null;
 }
 
+function _indicadorRowToLocal(row){
+  const pivoSup=_pivosSupabaseCache.find(p=>p.id===row.pivo_id);
+  const pivoLocal=pivoSup?_pivoLocalPorNumero(pivoSup.numero):null;
+  return {
+    id:row.id, grupoId:row.grupo_id, versao:row.versao, atual:row.atual, status:row.status,
+    pivoId:pivoLocal?pivoLocal.id:null, _pivoNumero:pivoSup?pivoSup.numero:null,
+    data:row.data, falhaCategoria:row.falha_categoria||'', falhaMotivo:row.falha_motivo||'',
+    /* falhaId: melhor esforço, resolvido por categoria+motivo contra o
+       cadastro local — mesma ressalva do produtoId em fertirrigacao.js. */
+    falhaId:((cadAll('falhas')||[]).find(f=>f.categoria===row.falha_categoria&&f.motivo===row.falha_motivo)||{}).id||null,
+    observacao:row.observacao||'', criadoEm:row.criado_em,
+  };
+}
+
+/* Sincroniza o cache em memória com o banco oficial. Chamada 1x no boot
+   (main.js) e novamente após cada gravação. */
+async function indicadorSyncCache(){
+  if(typeof window.coiDB==='undefined'){ console.warn('[indicador] Supabase não configurado — cache vazio.'); return false; }
+  try{
+    const data=await sbFetchAll((from,to)=>window.coiDB.schema('coi').from('indicador_ocorrencias').select('*').order('criado_em',{ascending:true}).range(from,to));
+    _indicadorCache=data.map(_indicadorRowToLocal);
+    _indicadorSyncOk=true;
+    return true;
+  }catch(err){
+    console.error('[indicador] Falha ao sincronizar com o Supabase:',err);
+    _indicadorSyncOk=false;
+    return false;
+  }
+}
+
+const indicadorTodos = () => _indicadorCache;
+const indicadorAtivos = () => indicadorTodos().filter(r=>r.atual&&r.status==='ativo');
+
+function _indicadorDadosParaRow(dados,pivoSupabaseId,extra){
+  const falha=indicadorFalhaInfo(dados.falhaId);
+  return {
+    pivo_id:pivoSupabaseId, data:dados.data,
+    falha_categoria:falha?falha.categoria:'', falha_motivo:falha?falha.motivo:'',
+    observacao:dados.observacao||'', origem:'app',
+    ...extra,
+  };
+}
+
 /* ── CRUD (grupoId/versao/atual, igual ao serviço de Horímetro) ──── */
-function indicadorCriar(dados){
+async function indicadorCriar(dados){
   if(!dados.pivoId||!dados.falhaId||!dados.data){
     return {ok:false,erros:['Selecione pivô, falha e data.']};
   }
   if(dataEhFutura(dados.data)&&!dados.dataFuturaAutorizada) return {ok:false,dataFuturaPendente:true};
 
-  const id=gId();
-  const registro={
-    id, grupoId:id, versao:1, atual:true, status:'ativo',
-    pivoId:dados.pivoId, falhaId:dados.falhaId, data:dados.data,
-    observacao:dados.observacao||'',
-    criadoEm:new Date().toISOString(),
-  };
-  const todos=indicadorTodos();
-  todos.push(registro);
-  indicadorSalvarTudo(todos);
+  const pivo=horimetroPivoInfo(dados.pivoId);
+  if(!pivo) return {ok:false,erros:['Pivô não encontrado no cadastro.']};
 
-  const pivo=horimetroPivoInfo(dados.pivoId), falha=indicadorFalhaInfo(dados.falhaId);
-  auditLog('Indicadores','INCLUSÃO',`Pivô ${pivo?pivo.numero:'?'} — ${falha?falha.categoria+'/'+falha.motivo:'?'} — ${fmtD(dados.data)}`);
+  let pivoSupabaseId;
+  try{ pivoSupabaseId=await _pivoSupabaseIdPorNumero(pivo.numero); }
+  catch(err){ return {ok:false,erros:['Falha ao conectar ao banco de indicadores: '+err.message]}; }
+
+  const grupoId=(crypto&&crypto.randomUUID)?crypto.randomUUID():gId();
+  const row=_indicadorDadosParaRow(dados,pivoSupabaseId,{grupo_id:grupoId,versao:1,atual:true,status:'ativo'});
+  const {data:inserted,error}=await window.coiDB.schema('coi').from('indicador_ocorrencias').insert(row).select('*').single();
+  if(error) return {ok:false,erros:['Falha ao gravar no banco: '+error.message]};
+
+  const registro=_indicadorRowToLocal(inserted);
+  _indicadorCache.push(registro);
+  const falha=indicadorFalhaInfo(dados.falhaId);
+  auditLog('Indicadores','INCLUSÃO',`Pivô ${pivo.numero} — ${falha?falha.categoria+'/'+falha.motivo:'?'} — ${fmtD(dados.data)}`);
   return {ok:true,registro};
 }
 
-function indicadorAtualizar(grupoId,dados){
-  const todos=indicadorTodos();
-  const atual=todos.find(r=>r.grupoId===grupoId&&r.atual);
-  if(!atual) return {ok:false,erros:['Ocorrência não encontrada.']};
+async function indicadorAtualizar(grupoId,dados){
+  const atualLocal=indicadorTodos().find(r=>r.grupoId===grupoId&&r.atual);
+  if(!atualLocal) return {ok:false,erros:['Ocorrência não encontrada.']};
   if(dataEhFutura(dados.data)&&!dados.dataFuturaAutorizada) return {ok:false,dataFuturaPendente:true};
 
-  atual.atual=false;
-  const nova={
-    ...atual, id:gId(), versao:atual.versao+1, atual:true, status:'ativo',
-    pivoId:dados.pivoId, falhaId:dados.falhaId, data:dados.data,
-    observacao:dados.observacao||'',
-    criadoEm:new Date().toISOString(),
-  };
-  todos.push(nova);
-  indicadorSalvarTudo(todos);
   const pivo=horimetroPivoInfo(dados.pivoId);
-  auditLog('Indicadores','ALTERAÇÃO',`Pivô ${pivo?pivo.numero:'?'} — versão ${nova.versao}`);
-  return {ok:true,registro:nova};
+  if(!pivo) return {ok:false,erros:['Pivô não encontrado no cadastro.']};
+
+  let pivoSupabaseId;
+  try{ pivoSupabaseId=await _pivoSupabaseIdPorNumero(pivo.numero); }
+  catch(err){ return {ok:false,erros:['Falha ao conectar ao banco de indicadores: '+err.message]}; }
+
+  const {error:updErr}=await window.coiDB.schema('coi').from('indicador_ocorrencias').update({atual:false}).eq('id',atualLocal.id);
+  if(updErr) return {ok:false,erros:['Falha ao versionar registro anterior: '+updErr.message]};
+
+  const row=_indicadorDadosParaRow(dados,pivoSupabaseId,{grupo_id:grupoId,versao:atualLocal.versao+1,atual:true,status:'ativo'});
+  const {data:inserted,error}=await window.coiDB.schema('coi').from('indicador_ocorrencias').insert(row).select('*').single();
+  if(error){
+    const {error:revertErr}=await window.coiDB.schema('coi').from('indicador_ocorrencias').update({atual:true}).eq('id',atualLocal.id);
+    if(revertErr) console.error('[indicador] Falha ao reverter atual=true após erro de gravação — grupo pode ter ficado sem versão atual:',grupoId,revertErr);
+    return {ok:false,erros:['Falha ao gravar nova versão: '+error.message]};
+  }
+
+  atualLocal.atual=false;
+  const registro=_indicadorRowToLocal(inserted);
+  _indicadorCache.push(registro);
+  const pivoInfo=horimetroPivoInfo(dados.pivoId);
+  auditLog('Indicadores','ALTERAÇÃO',`Pivô ${pivoInfo?pivoInfo.numero:'?'} — versão ${registro.versao}`);
+  return {ok:true,registro};
 }
 
-function indicadorExcluir(grupoId){
-  const todos=indicadorTodos();
-  const atual=todos.find(r=>r.grupoId===grupoId&&r.atual);
-  if(!atual) return {ok:false,erros:['Ocorrência não encontrada.']};
-  atual.status='excluido';
-  indicadorSalvarTudo(todos);
-  const pivo=horimetroPivoInfo(atual.pivoId);
-  auditLog('Indicadores','EXCLUSÃO',`Pivô ${pivo?pivo.numero:'?'} — ${fmtD(atual.data)}`);
+async function indicadorExcluir(grupoId){
+  const atualLocal=indicadorTodos().find(r=>r.grupoId===grupoId&&r.atual);
+  if(!atualLocal) return {ok:false,erros:['Ocorrência não encontrada.']};
+
+  const {error}=await window.coiDB.schema('coi').from('indicador_ocorrencias').update({status:'excluido'}).eq('id',atualLocal.id);
+  if(error) return {ok:false,erros:['Falha ao excluir: '+error.message]};
+
+  atualLocal.status='excluido';
+  const pivo=horimetroPivoInfo(atualLocal.pivoId);
+  auditLog('Indicadores','EXCLUSÃO',`Pivô ${pivo?pivo.numero:'?'} — ${fmtD(atualLocal.data)}`);
   return {ok:true};
 }
 
@@ -91,10 +153,14 @@ function indicadorPorCasaBomba(casaBombaId){
   return indicadorAtivos().filter(r=>pivoIds.has(r.pivoId));
 }
 
-/* Distribuição das falhas por categoria (para gráfico de pizza/barras). */
+/* Distribuição das falhas por categoria (para gráfico de pizza/barras).
+   Agora lê `falhaCategoria` (denormalizado no registro), não mais via
+   lookup em `indicadorFalhaInfo` — o registro grava o texto no momento
+   do lançamento, então continua correto mesmo se a falha for renomeada/
+   removida do cadastro depois. */
 function indicadorDistribuicaoCategoria(ocorrencias){
   const arr=ocorrencias||indicadorAtivos();
-  return agruparPorChave(arr,r=>{ const f=indicadorFalhaInfo(r.falhaId); return f?f.categoria:'Não classificado'; },()=>1);
+  return agruparPorChave(arr,r=>r.falhaCategoria||'Não classificado',()=>1);
 }
 
 /* ── INDICADORES DE MANUTENÇÃO (estrutura pronta; retornam null quando

@@ -56,6 +56,17 @@ async function bootApp(){
   if(typeof calibracaoSyncCache==='function') await calibracaoSyncCache();
   if(typeof planejamentoSyncCache==='function') await planejamentoSyncCache();
   if(typeof energiaSyncCache==='function') await energiaSyncCache();
+  /* Auditoria de sincronização (2026-09-21) — Fertirrigação e Falha/
+     Indicador migraram do localStorage para o Supabase no mesmo padrão
+     acima; precisam do mesmo sync 1x no boot. */
+  if(typeof fertiSyncCache==='function') await fertiSyncCache();
+  if(typeof indicadorSyncCache==='function') await indicadorSyncCache();
+  /* Auditoria de sincronização (2026-09-21) — traz automaticamente os
+     "pivôs fantasmas" (criados no Supabase via 1º lançamento, nunca
+     cadastrados localmente neste dispositivo) e os dados técnicos
+     (vazão/potência/coordenadas), sem depender do botão manual. Silent:
+     não mostra toast nem bloqueia o boot por causa de permissão. */
+  if(typeof _cadSincronizarPivosComSupabase==='function') await _cadSincronizarPivosComSupabase({silent:true});
   /* Fase 16/17 — Usuários/Perfis/Permissões: permissoes ANTES de usuarios
      (usuarioSincronizarSessao, chamado por login.js logo depois de
      bootApp resolver, precisa de _perfisCache já carregado pra resolver
@@ -98,6 +109,8 @@ function iniciarSincronizacaoPeriodica(){
     const okC=typeof calibracaoSyncCache==='function'?await calibracaoSyncCache():true;
     const okPl=typeof planejamentoSyncCache==='function'?await planejamentoSyncCache():true;
     if(typeof energiaSyncCache==='function') await energiaSyncCache();
+    if(typeof fertiSyncCache==='function') await fertiSyncCache();
+    if(typeof indicadorSyncCache==='function') await indicadorSyncCache();
     if(typeof permissoesSyncCache==='function') await permissoesSyncCache();
     if(typeof usuariosSyncCache==='function') await usuariosSyncCache();
     /* Não força goPage() em 'lanc'/'cad': são telas de formulário com

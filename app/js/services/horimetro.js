@@ -220,7 +220,8 @@ async function horimetroAtualizar(grupoId,dados){
   const {data:inserted,error}=await window.coiDB.schema('coi').from('horimetro_lancamentos').insert(row).select('*').single();
   if(error){
     // reverte a versão anterior para não deixar o grupo sem "atual"
-    await window.coiDB.schema('coi').from('horimetro_lancamentos').update({atual:true}).eq('id',atualLocal.id);
+    const {error:revertErr}=await window.coiDB.schema('coi').from('horimetro_lancamentos').update({atual:true}).eq('id',atualLocal.id);
+    if(revertErr) console.error('[horimetro] Falha ao reverter atual=true após erro de gravação — grupo pode ter ficado sem versão atual:',grupoId,revertErr);
     return {ok:false,erros:['Falha ao gravar nova versão: '+error.message]};
   }
 

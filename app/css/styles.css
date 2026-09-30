@@ -2,6 +2,16 @@
    COI — SISTEMA DE GESTÃO · DESIGN SYSTEM v2.0
    Centro de Operações de Irrigação · Santa Colomba Agropecuária
 ═══════════════════════════════════════════════════════════════ */
+
+/* Auditoria de erros visuais (21/09/2026) — rede de segurança geral:
+   um <svg> inline sem width/height no atributo E sem nenhuma regra CSS
+   de tamanho renderiza no tamanho intrínseco do navegador (bug já visto
+   uma vez: cobria a tela inteira, ver `.alert svg` em applied-shell.css).
+   Este arquivo carrega PRIMEIRO (index.html) — de propósito, para que
+   qualquer regra de tamanho mais específica definida depois (aqui mesmo,
+   ou em tokens.css/applied*.css) sempre vença esta na cascata; ela só
+   entra em ação quando nenhuma outra regra assumiu o tamanho do ícone. */
+svg:not([width]){width:20px;height:20px}
 :root {
   /* ── Brand ── */
   --brand-50:#e8f5f0;--brand-100:#c5e8da;--brand-200:#9dd5bf;

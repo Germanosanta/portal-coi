@@ -118,19 +118,26 @@ const cadKey = entity => 'cad_'+entity;
 const cadAll = entity => lsGet(cadKey(entity),[]);
 const cadSaveAll = (entity,arr) => lsSet(cadKey(entity),arr);
 
-/* ── IMPORTAR DADOS TÉCNICOS (vazão/potência/coordenadas) ────────────
+/* ── SINCRONIZAÇÃO PIVÔS ↔ SUPABASE (vazão/potência/coordenadas + IDs) ──
    Cadastros → Pivôs é local (localStorage, por navegador) — nunca vai
-   ler direto do Supabase como Horímetro/Usuários. Este botão faz a
-   ponte manual, 1x: busca coi.pivos_potencia_tecnica (populada via
-   migration 011) e casa pelo NÚMERO do pivô com os registros que já
-   existem aqui, preenchendo só os 4 campos técnicos — nunca mexe em
-   fazenda/casaBomba/área/lâmina/status, que continuam sendo o que já
-   estava cadastrado localmente. */
-async function cadImportarDadosTecnicosPivos(){
-  if(bloquearSemPermissao('cadastros','edit')) return;
-  if(typeof window.coiDB==='undefined'){ toast('Supabase não configurado.','err'); return; }
-  const btn=document.getElementById('cad-pivos-import-btn');
-  if(btn){ btn.disabled=true; btn.textContent='Importando...'; }
+   ler direto do Supabase como Horímetro/Usuários. Esta é a ponte entre
+   os dois lados, casando pelo NÚMERO do pivô (único nos dois):
+     1) traz vazão/potência/coordenadas de coi.pivos_potencia_tecnica
+        para os registros locais já cadastrados (nunca mexe em fazenda/
+        casaBomba/área/lâmina/status, que continuam sendo o que já
+        estava cadastrado localmente);
+     2) cria localmente (mínimo, só o número) qualquer pivô que já
+        exista em coi.pivos mas nunca tenha sido cadastrado neste
+        dispositivo — corrige os "pivôs fantasmas" (auditoria de
+        sincronização, 2026-09-21: um pivô só nascia no Supabase no
+        1º lançamento de Horímetro, nunca ficava visível em Cadastros
+        até alguém rodar essa ponte).
+   `_cadSincronizarPivosComSupabase({silent:true})` roda sozinha 1x no
+   boot (main.js); o botão "Importar dados técnicos" chama a mesma
+   função com feedback visual (toast/loading), silent:false. */
+async function _cadSincronizarPivosComSupabase(opts){
+  const silent=!!(opts&&opts.silent);
+  if(typeof window.coiDB==='undefined'){ if(!silent) toast('Supabase não configurado.','err'); return {ok:false}; }
   try{
     const [pivosR,potenciaR]=await Promise.all([
       window.coiDB.schema('coi').from('pivos').select('id,numero'),
@@ -147,6 +154,7 @@ async function cadImportarDadosTecnicosPivos(){
       porNumero[numero]={vazaoM3h:r.vazao_m3h,potenciaCv:r.potencia_cv,latitude:r.latitude,longitude:r.longitude};
     });
     const locais=cadAll('pivos');
+    const numerosLocais=new Set(locais.map(p=>Number(p.numero)));
     let atualizados=0;
     locais.forEach(p=>{
       const dados=porNumero[Number(p.numero)];
@@ -157,16 +165,44 @@ async function cadImportarDadosTecnicosPivos(){
       if(dados.longitude!==null&&dados.longitude!==undefined) p.longitude=dados.longitude;
       atualizados++;
     });
+    /* Pivôs "fantasmas": existem no Supabase (criados via 1º lançamento
+       de Horímetro/Parada/etc.) mas nunca foram cadastrados aqui. Cria
+       um registro mínimo local — os demais campos (fazenda/casaBomba/
+       área) ficam para o operador completar depois, mas o pivô já
+       aparece na lista em vez de ficar invisível. */
+    let criados=0;
+    (pivosR.data||[]).forEach(p=>{
+      if(numerosLocais.has(Number(p.numero))) return;
+      const dadosTecnicos=porNumero[p.numero]||{};
+      locais.push({
+        id:gId(), numero:p.numero, fazendaId:'', casaBombaId:'', area:'', laminaBase100:'', status:'ativo',
+        vazaoM3h:dadosTecnicos.vazaoM3h??'', potenciaCv:dadosTecnicos.potenciaCv??'',
+        latitude:dadosTecnicos.latitude??'', longitude:dadosTecnicos.longitude??'',
+      });
+      numerosLocais.add(Number(p.numero));
+      criados++;
+    });
     cadSaveAll('pivos',locais);
-    auditoriaRegistrar&&auditoriaRegistrar('ALTERAÇÃO','Cadastros','Pivôs',`Importou dados técnicos (vazão/potência/coordenadas) de ${atualizados} pivô(s).`);
-    toast(`${atualizados} pivô(s) atualizado(s) com vazão/potência/coordenadas.`,'ok');
-    cadRenderList('pivos');
+    if(atualizados||criados){
+      auditoriaRegistrar&&auditoriaRegistrar('ALTERAÇÃO','Cadastros','Pivôs',
+        `Sincronizou com o Supabase: ${atualizados} pivô(s) atualizado(s), ${criados} pivô(s) novo(s) importado(s).`);
+    }
+    if(!silent) toast(`${atualizados} pivô(s) atualizado(s), ${criados} novo(s) importado(s).`,'ok');
+    if(typeof cadRenderList==='function') cadRenderList('pivos');
+    return {ok:true,atualizados,criados};
   }catch(err){
-    console.error('[cadastro] falha ao importar dados técnicos dos pivôs:',err);
-    toast('Falha ao importar: '+(err.message||err),'err');
-  }finally{
-    if(btn){ btn.disabled=false; btn.textContent='Importar dados técnicos'; }
+    console.error('[cadastro] falha ao sincronizar pivôs com o Supabase:',err);
+    if(!silent) toast('Falha ao importar: '+(err.message||err),'err');
+    return {ok:false,erro:err};
   }
+}
+
+async function cadImportarDadosTecnicosPivos(){
+  if(bloquearSemPermissao('cadastros','edit')) return;
+  const btn=document.getElementById('cad-pivos-import-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Importando...'; }
+  try{ await _cadSincronizarPivosComSupabase({silent:false}); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent='Importar dados técnicos'; } }
 }
 function cadLookupLabel(entity,id){
   if(!id) return '—';

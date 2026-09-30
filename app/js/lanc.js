@@ -619,7 +619,7 @@ const lhf={
     this.limparEquipamento();
   },
 
-  salvar(dataFuturaAutorizada){
+  async salvar(dataFuturaAutorizada){
     if(bloquearSemPermissao('lancamentos','edit')) return;
     const dados={
       pivoId:v('lhf-pivo'), falhaId:v('lhf-motivo'), data:v('lhf-data'),
@@ -628,7 +628,7 @@ const lhf={
     };
     if(!dados.pivoId||!dados.falhaId||!dados.data){ toast('Preencha data, pivô, categoria e motivo.','err'); return; }
 
-    const resultado=this.editandoGrupoId?indicadorAtualizar(this.editandoGrupoId,dados):indicadorCriar(dados);
+    const resultado=this.editandoGrupoId?await indicadorAtualizar(this.editandoGrupoId,dados):await indicadorCriar(dados);
     if(resultado.dataFuturaPendente){
       if(confirm('A data informada é futura. Confirma mesmo assim?')) this.salvar(true);
       return;
@@ -663,8 +663,8 @@ const lhf={
   excluir(grupoId,btn){
     if(bloquearSemPermissao('lancamentos','delete')) return;
     if(!confirm('Excluir esta ocorrência? Ela some das consultas, mas o registro fica guardado e a exclusão vai para a auditoria.')) return;
-    opFadeRowThen(btn,()=>{
-      const resultado=indicadorExcluir(grupoId);
+    opFadeRowThen(btn,async()=>{
+      const resultado=await indicadorExcluir(grupoId);
       if(resultado.ok){ toast('Ocorrência excluída.','ok'); this.render(); }
     });
   },
@@ -987,7 +987,7 @@ const lft={
     document.getElementById('lft-salvar-lbl').textContent='Registrar';
   },
 
-  salvar(dataFuturaAutorizada){
+  async salvar(dataFuturaAutorizada){
     if(bloquearSemPermissao('lancamentos','edit')) return;
     const dados={
       pivoId:v('lft-pivo'), produtoId:v('lft-produto'), cultura:v('lft-cultura'), safra:v('lft-safra'),
@@ -995,7 +995,7 @@ const lft={
       quantidadeAplicada:v('lft-qtd'), concentracao:v('lft-conc'), volumeAgua:v('lft-volume'), vazao:v('lft-vazao'),
       operador:v('lft-oper'), observacao:v('lft-obs'), dataFuturaAutorizada:!!dataFuturaAutorizada,
     };
-    const resultado=this.editandoGrupoId?fertiAtualizar(this.editandoGrupoId,dados):fertiCriar(dados);
+    const resultado=this.editandoGrupoId?await fertiAtualizar(this.editandoGrupoId,dados):await fertiCriar(dados);
     if(resultado.dataFuturaPendente){
       if(confirm('A data informada é futura. Confirma mesmo assim?')) this.salvar(true);
       return;
@@ -1038,8 +1038,8 @@ const lft={
   excluir(grupoId,btn){
     if(bloquearSemPermissao('lancamentos','delete')) return;
     if(!confirm('Excluir esta fertirrigação? Ela some das consultas, mas o registro fica guardado e a exclusão vai para a auditoria.')) return;
-    opFadeRowThen(btn,()=>{
-      const resultado=fertiExcluir(grupoId);
+    opFadeRowThen(btn,async()=>{
+      const resultado=await fertiExcluir(grupoId);
       if(resultado.ok){ toast('Fertirrigação excluída.','ok'); this.render(); }
     });
   },

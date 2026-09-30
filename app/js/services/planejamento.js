@@ -120,7 +120,8 @@ async function planejamentoAtualizar(grupoId,dados){
   const row=_planejamentoDadosParaRow(dados,pivoSupabaseId,{grupo_id:grupoId,versao:atualLocal.versao+1,atual:true,status:'ativo'});
   const {data:inserted,error}=await window.coiDB.schema('coi').from('planejamento_lancamentos').insert(row).select('*').single();
   if(error){
-    await window.coiDB.schema('coi').from('planejamento_lancamentos').update({atual:true}).eq('id',atualLocal.id);
+    const {error:revertErr}=await window.coiDB.schema('coi').from('planejamento_lancamentos').update({atual:true}).eq('id',atualLocal.id);
+    if(revertErr) console.error('[planejamento] Falha ao reverter atual=true após erro de gravação — grupo pode ter ficado sem versão atual:',grupoId,revertErr);
     return {ok:false,erros:['Falha ao gravar nova versão: '+error.message]};
   }
 
