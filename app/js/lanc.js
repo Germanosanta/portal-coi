@@ -333,7 +333,7 @@ const lhm={
      Fase 14 — horimetroCriar/horimetroAtualizar viraram async (gravam
      no Supabase de verdade); a tela só ganhou o await, nada da lógica
      de validação/exibição mudou. */
-  async salvar(dataFuturaAutorizada){
+  async salvar(dataFuturaAutorizada,horimetroMenorAutorizado){
     if(bloquearSemPermissao('lancamentos','edit')) return;
     /* "Data da OS" (campo lhm-data) é sempre a que o operador escolheu —
        nunca é substituída pela data de hoje. A hora, ao contrário, NUNCA
@@ -351,6 +351,7 @@ const lhm={
       cultura:v('lhm-cult'),
       areaPivo:v('lhm-area'), operador:v('lhm-oper'), observacao:v('lhm-obs'), safra:v('lhm-safra'),
       dataFuturaAutorizada:!!dataFuturaAutorizada,
+      horimetroMenorAutorizado:!!horimetroMenorAutorizado,
     };
 
     const btn=document.getElementById('lhm-salvar-btn');
@@ -375,7 +376,13 @@ const lhm={
 
     if(resultado.dataFuturaPendente){
       btn.disabled=false; lbl.textContent='Salvar Lançamento';
-      if(confirm('A data informada é futura. Confirma o lançamento mesmo assim?')) this.salvar(true);
+      if(confirm('A data informada é futura. Confirma o lançamento mesmo assim?')) this.salvar(true,horimetroMenorAutorizado);
+      return;
+    }
+    if(resultado.horimetroMenorPendente){
+      btn.disabled=false; lbl.textContent='Salvar Lançamento';
+      const motivo='Isso é esperado ao trocar de cultura/área ou substituir o medidor — confirme só se for um desses casos.';
+      if(confirm(`Horímetro inicial (${dados.horimetroInicial}) é menor que o último registrado para este pivô (${resultado.ultimoHorimetroFinal}). ${motivo}\n\nConfirma mesmo assim?`)) this.salvar(dataFuturaAutorizada,true);
       return;
     }
     btn.disabled=false; lbl.textContent='Salvar Lançamento';

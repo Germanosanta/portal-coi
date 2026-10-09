@@ -170,8 +170,10 @@ async function horimetroCriar(dados){
   const {horas,lamina}=horimetroCalcularCampos(dados);
   const check=validarHorimetroLancamento(dados,contexto);
   if(!check.valido){
-    if(check.erros.length===1&&check.erros[0]==='DATA_FUTURA') return {ok:false,dataFuturaPendente:true};
-    return {ok:false,erros:check.erros.filter(e=>e!=='DATA_FUTURA')};
+    const reais=check.erros.filter(e=>e!=='DATA_FUTURA'&&e!=='HORIMETRO_MENOR');
+    if(reais.length) return {ok:false,erros:reais};
+    if(check.erros.includes('HORIMETRO_MENOR')) return {ok:false,horimetroMenorPendente:true,ultimoHorimetroFinal:contexto.ultimoHorimetroFinal};
+    return {ok:false,dataFuturaPendente:true};
   }
   const pivo=horimetroPivoInfo(dados.pivoId);
   if(!pivo) return {ok:false,erros:['Pivô não encontrado no cadastro.']};
@@ -203,8 +205,10 @@ async function horimetroAtualizar(grupoId,dados){
   const {horas,lamina}=horimetroCalcularCampos(dados);
   const check=validarHorimetroLancamento(dados,contexto);
   if(!check.valido){
-    if(check.erros.length===1&&check.erros[0]==='DATA_FUTURA') return {ok:false,dataFuturaPendente:true};
-    return {ok:false,erros:check.erros.filter(e=>e!=='DATA_FUTURA')};
+    const reais=check.erros.filter(e=>e!=='DATA_FUTURA'&&e!=='HORIMETRO_MENOR');
+    if(reais.length) return {ok:false,erros:reais};
+    if(check.erros.includes('HORIMETRO_MENOR')) return {ok:false,horimetroMenorPendente:true,ultimoHorimetroFinal:contexto.ultimoHorimetroFinal};
+    return {ok:false,dataFuturaPendente:true};
   }
   const pivo=horimetroPivoInfo(dados.pivoId);
   if(!pivo) return {ok:false,erros:['Pivô não encontrado no cadastro.']};

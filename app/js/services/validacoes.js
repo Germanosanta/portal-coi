@@ -45,9 +45,12 @@ function validarHorimetroLancamento(dados,contexto){
   // Horas negativas / horímetro reduzido dentro do próprio lançamento
   if(horimetroInicialValido(h1)&&isFinite(Number(h2))&&!horasValidas(h1,h2)) erros.push('Horímetro final deve ser maior que o horímetro inicial.');
 
-  // Redução do horímetro acumulado do equipamento (comparado ao histórico)
-  if(horimetroInicialValido(h1)&&contexto&&contexto.ultimoHorimetroFinal!=null&&Number(h1)<contexto.ultimoHorimetroFinal){
-    erros.push(`Horímetro inicial (${h1}) não pode ser menor que o último horímetro registrado para este pivô (${contexto.ultimoHorimetroFinal}).`);
+  // Redução do horímetro acumulado do equipamento (comparado ao histórico).
+  // Sentinela (igual DATA_FUTURA): só bloqueia de fato se o operador não
+  // tiver confirmado explicitamente — troca de cultura/área ou medidor
+  // substituído são motivos legítimos para o horímetro "voltar".
+  if(horimetroInicialValido(h1)&&contexto&&contexto.ultimoHorimetroFinal!=null&&Number(h1)<contexto.ultimoHorimetroFinal&&!dados.horimetroMenorAutorizado){
+    erros.push('HORIMETRO_MENOR');
   }
 
   // Data futura (só bloqueia se não autorizada explicitamente)
