@@ -262,6 +262,17 @@ const lhm={
     document.getElementById('lhm-h1-hint').textContent='Editado manualmente — confira o valor.';
   },
 
+  /* Troca de cultura no meio do lançamento costuma vir acompanhada de uma
+     leitura própria do equipamento (pivô trocou de talhão/área) — por
+     isso destrava o Horímetro Inicial automaticamente, em vez de deixar
+     o operador procurar o botão "🔒 Auto" sozinho. Só destrava se ainda
+     estiver no modo automático (readOnly); se o operador já tiver
+     destravado manualmente antes, não mexe de novo. */
+  onCultura(){
+    const h1=document.getElementById('lhm-h1');
+    if(v('lhm-cult')&&h1&&h1.readOnly) this.unlockH1();
+  },
+
   /* ── CÁLCULOS AO VIVO (delegados a services/calculos.js) ──────── */
   onH1(){ this.calc(); },
 
