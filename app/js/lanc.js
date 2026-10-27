@@ -553,13 +553,33 @@ const lhm={
     this.renderHist();
   },
 
+  /* Exportação completa (todos os campos do lançamento, não só as colunas
+     visíveis na tabela do Histórico) — inclui ID/versão/status/origem e,
+     principalmente, o usuário real que gravou (usuarioId/usuarioNome, da
+     sessão Supabase Auth — nunca o campo "Operador", que é texto livre e
+     pode estar em branco ou divergir de quem estava logado). */
   exportHist(){
     const rows=horimetroAtivos().map(r=>{
       const pivo=horimetroPivoInfo(r.pivoId);
-      return [fmtD(r.data),pivo?pivo.numero:'',r.cultura,r.areaPivo,r.horimetroInicial,r.horimetroFinal,r.horas,r.percentual,r.lamina,r.operador,r.versao];
+      return [
+        r.id, r.grupoId, r.versao, r.status, r.origem,
+        fmtD(r.data), r.horaInicio, pivo?pivo.numero:'',
+        r.cultura, r.safra, r.areaPivo,
+        r.horimetroInicial, r.horimetroFinal, r.horas, r.percentual, r.lamina,
+        r.pressao, r.horasOciosas,
+        r.operador, r.usuarioId, r.usuarioNome,
+        r.observacao, r.criadoEm,
+      ];
     });
     if(!rows.length){ toast('Nada para exportar.','warn'); return; }
-    downloadCSV('lancamentos_horimetro.csv',toCSV(['Data','Pivô','Cultura','Área','H.Inicial','H.Final','Horas','Percentual','Lâmina','Operador','Versão'],rows));
+    downloadCSV('lancamentos_horimetro.csv',toCSV([
+      'ID','Grupo ID','Versão','Status','Origem',
+      'Data','Hora','Pivô','Cultura','Safra','Área',
+      'H.Inicial','H.Final','Horas','Percentual','Lâmina',
+      'Pressão','Horas Ociosas',
+      'Operador (texto livre)','ID do Usuário','Nome do Usuário',
+      'Observação','Criado Em',
+    ],rows));
     toast(`${rows.length} lançamentos exportados.`,'ok');
   },
 };

@@ -49,6 +49,7 @@ function _rowToLocal(row){
     horasOciosas:row.horas_ociosas!=null?Number(row.horas_ociosas):null,
     cultura:row.cultura||'', areaPivo:row.area_pivo||'COMPLETO', operador:row.operador||'',
     observacao:row.observacao||'', safra:row.safra||'', criadoEm:row.criado_em,
+    origem:row.origem||'', usuarioId:row.usuario_id||'', usuarioNome:row.usuario_nome||'',
   };
 }
 
@@ -156,6 +157,12 @@ function _dadosParaRow(dados,horas,lamina,pivoSupabaseId,extra){
     horas_ociosas:dados.horasOciosas!==''&&dados.horasOciosas!=null?Number(dados.horasOciosas):null,
     cultura:dados.cultura||'', area_pivo:dados.areaPivo||'COMPLETO', operador:dados.operador||'',
     observacao:dados.observacao||'', safra:dados.safra||'', origem:'app',
+    /* "Operador" (acima) é texto livre digitado na tela — pode ficar em
+       branco ou divergir de quem estava logado de fato. usuario_id/nome
+       vêm da sessão real (Supabase Auth), para quem precisar saber com
+       certeza quem lançou (auditoria/exportação). */
+    usuario_id:(typeof _authUserId!=='undefined'&&_authUserId)?_authUserId:null,
+    usuario_nome:(typeof usuarioAtualNome==='function')?usuarioAtualNome():null,
     ...extra,
   };
 }
